@@ -1,0 +1,32 @@
+# github.com/coder/websocket v1.8.14
+## explicit; go 1.23
+github.com/coder/websocket
+github.com/coder/websocket/internal/bpool
+github.com/coder/websocket/internal/errd
+github.com/coder/websocket/internal/util
+github.com/coder/websocket/internal/wsjs
+github.com/coder/websocket/wsjson
+# github.com/go-chi/chi v1.5.5
+## explicit; go 1.16
+github.com/go-chi/chi
+# github.com/go-chi/cors v1.2.2
+## explicit; go 1.14
+github.com/go-chi/cors
+# github.com/golang-jwt/jwt/v5 v5.3.0
+## explicit; go 1.21
+github.com/golang-jwt/jwt/v5
+# github.com/google/uuid v1.6.0
+## explicit
+github.com/google/uuid
+# github.com/hasura/go-graphql-client v0.14.5
+## explicit; go 1.20
+github.com/hasura/go-graphql-client
+github.com/hasura/go-graphql-client/ident
+github.com/hasura/go-graphql-client/pkg/jsonutil
+# github.com/joho/godotenv v1.5.1
+## explicit; go 1.12
+github.com/joho/godotenv
+# golang.org/x/crypto v0.43.0
+## explicit; go 1.24.0
+golang.org/x/crypto/bcrypt
+golang.org/x/crypto/blowfish
