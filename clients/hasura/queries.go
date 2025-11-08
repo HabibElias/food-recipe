@@ -13,3 +13,7 @@ var GetUserByIDQuery struct {
 var GetUserByEmailQuery struct {
 	User []schemas.User `graphql:"user(where: {email: {_eq: $email}})"`
 }
+
+var GetUserByUsernameQuery struct {
+	User []schemas.User `graphql:"user(where: {username: {_eq: $username}})"`
+}

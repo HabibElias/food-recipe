@@ -44,7 +44,7 @@ func main() {
 	v1Router.Get("/healthz", handlerReadiness)
 	v1Router.Get("/err", helpers.HandleErr)
 	v1Router.Post("/login", handlers.HandleUserLogin)
-	v1Router.Post("/auth/sign-up", handlers.HandleCreateUser)
+	v1Router.Post("/signup", handlers.SignupHandler)
 	// protected route returning current user
 	v1Router.With(middlewares.RequireAuth).Get("/me", handlers.HandleMe)
 

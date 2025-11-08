@@ -23,7 +23,7 @@ func GenerateHasuraJWT(userID, email string) (string, error) {
 			"x-hasura-default-role":  "user",
 			"x-hasura-user-id":       userID,
 		},
-		"exp": time.Now().Add(24 * time.Second).Unix(),
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
