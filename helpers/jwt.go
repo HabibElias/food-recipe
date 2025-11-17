@@ -1,7 +1,7 @@
 package helpers
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"time"
 
@@ -9,11 +9,11 @@ import (
 )
 
 func GenerateHasuraJWT(userID, email string) (string, error) {
-	var jwtSecret = []byte(os.Getenv("HASURA_JWT_SECRET"))
-
-	if jwtSecret == nil {
-		log.Fatal("HASURA_JWT_SECRET is not set on the env file")
+	jwtSecretStr := os.Getenv("HASURA_JWT_SECRET")
+	if jwtSecretStr == "" {
+		return "", fmt.Errorf("HASURA_JWT_SECRET is not set in environment")
 	}
+	jwtSecret := []byte(jwtSecretStr)
 
 	claims := jwt.MapClaims{
 		"sub":   userID,
@@ -28,4 +28,47 @@ func GenerateHasuraJWT(userID, email string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSecret)
+}
+
+
+func VerifyHasuraJWT(tokenStr string) (jwt.MapClaims, error) {
+	jwtSecretStr := os.Getenv("HASURA_JWT_SECRET")
+	if jwtSecretStr == "" {
+		return nil, fmt.Errorf("HASURA_JWT_SECRET is not set in environment")
+	}
+
+	token, err := jwt.ParseWithClaims(tokenStr, jwt.MapClaims{}, func(t *jwt.Token) (interface{}, error) {
+		// ensure token uses HMAC signing
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return []byte(jwtSecretStr), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("invalid token claims")
+	}
+
+	// additional expiry guard (ParseWithClaims typically validates this, but keep as a safeguard)
+	if expRaw, ok := claims["exp"]; ok {
+		switch exp := expRaw.(type) {
+		case float64:
+			if int64(exp) < time.Now().Unix() {
+				return nil, fmt.Errorf("token expired")
+			}
+		case int64:
+			if exp < time.Now().Unix() {
+				return nil, fmt.Errorf("token expired")
+			}
+		}
+	}
+
+	return claims, nil
 }

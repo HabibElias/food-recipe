@@ -1,15 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"go/food-recipe/handlers"
 	"go/food-recipe/helpers"
 	"go/food-recipe/initializers"
 	"log"
 	"net/http"
 	"os"
-
-	"go/food-recipe/middlewares"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
@@ -30,11 +27,19 @@ func main() {
 
 	router := chi.NewRouter()
 
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	var origins []string
+	if allowedOrigins != "" {
+		origins = []string{allowedOrigins}
+	} else {
+		origins = []string{"*"}
+	}
+
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   origins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		ExposedHeaders:   []string{"Link"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link", "Authorization"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
@@ -45,8 +50,13 @@ func main() {
 	v1Router.Get("/err", helpers.HandleErr)
 	v1Router.Post("/login", handlers.HandleUserLogin)
 	v1Router.Post("/signup", handlers.SignupHandler)
-	// protected route returning current user
-	v1Router.With(middlewares.RequireAuth).Get("/me", handlers.HandleMe)
+
+	v1Router.Post("/me", handlers.HandleMe)
+
+	v1Router.Post("/payment", handlers.InitializePaymentHandler)
+	v1Router.Get("/payment/verify", handlers.VerifyPaymentHandler)
+	v1Router.Post("/upload-recipe-images", handlers.UploadRecipeImagesHandler)
+	v1Router.Post("/like-notification", handlers.LikeNotificationHandler)
 
 	router.Mount("/v1", v1Router)
 
@@ -57,10 +67,7 @@ func main() {
 
 	log.Printf("Server starting on port %v", portString)
 
-	err := srv.ListenAndServe()
-	if err != nil {
-		log.Fatal(err)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal("Server failed to start: ", err)
 	}
-
-	fmt.Println("PORT: ", portString)
 }

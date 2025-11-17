@@ -47,7 +47,7 @@ func RequireAuth(next http.Handler) http.Handler {
 			return secret, nil
 		})
 		if err != nil || !token.Valid {
-			helpers.RespondWithError(w, http.StatusUnauthorized, "invalid token here is the problem")
+			helpers.RespondWithError(w, http.StatusUnauthorized, "invalid or expired token")
 			return
 		}
 

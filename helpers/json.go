@@ -7,7 +7,6 @@ import (
 )
 
 func RespondWithError(w http.ResponseWriter, code int, msg string) {
-
 	if code > 499 {
 		log.Printf("Responding with 5xx error: %v", msg)
 	}
@@ -17,18 +16,18 @@ func RespondWithError(w http.ResponseWriter, code int, msg string) {
 	}
 
 	RespondWithJson(w, code, errResponse{
-		Error: msg ,
+		Error: msg,
 	})
-
 }
+
 func RespondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	dat, err := json.Marshal(payload)
-	if err!= nil {
-		log.Printf("Failed to marshal JSON response %v", payload)
-		w.WriteHeader(500)
+	if err != nil {
+		log.Printf("Failed to marshal JSON response: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(dat)
 }

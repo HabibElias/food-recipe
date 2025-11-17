@@ -6,5 +6,7 @@ import (
 )
 
 func handlerReadiness(w http.ResponseWriter, r *http.Request) {
-	helpers.RespondWithJson(w, 200, struct{}{})
+	helpers.RespondWithJson(w, http.StatusOK, map[string]string{
+		"status": "ok",
+	})
 }
