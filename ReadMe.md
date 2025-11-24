@@ -1,65 +1,76 @@
-# Auth Service (for TODO frontend)
+# Food Recipe — Backend
 
-This small Go service acts as an authentication gateway for a frontend TODO application. It talks to a Hasura GraphQL backend to look up users and returns JWTs that include Hasura claims so the frontend can call Hasura directly.
+This repository contains the backend services for the Food Recipe application. It's primarily a small Go-based gateway that:
 
-Core responsibilities
-- Accept login requests (email + password).
-- Verify credentials against users stored in Hasura.
-- Issue HS256 JWTs containing Hasura claims (roles and x-hasura-user-id).
-- Provide a protected `/v1/me` endpoint that validates the Bearer token and returns the authenticated user's info.
+- Integrates with Hasura GraphQL for data storage and permissions.
+- Provides authentication (login/signup) and issues Hasura-compatible JWTs.
+- Handles image uploads (Cloudinary) for recipes and user avatars.
+- Integrates with Chapa for payment initialization and verification.
+- Processes Hasura event webhooks (notifications on likes, etc.) and writes notification rows to the database.
 
-Why this exists
-- Keeps the secret verification and password checks on a small backend service while letting the frontend make authorized GraphQL requests to Hasura using the returned JWT.
+Project responsibilities
+- Authenticate users, compare bcrypt hashed passwords, and produce HS256 JWTs containing Hasura claims.
+- Expose simple REST endpoints used by the frontend and Hasura Actions (image upload, payment init).
+- Provide webhook endpoints for payment verification and Hasura event triggers (likes -> notifications).
+- Upload images to Cloudinary and persist metadata/URLs in Hasura.
 
-Quick architecture
-- Frontend (TODO app) -> POST /v1/users (email/password) -> this service -> Hasura (verifies user) -> service returns JWT
-- Frontend stores JWT and calls Hasura directly (with authorization header) or calls protected endpoints (e.g. `/v1/me`) on this service.
+Architecture overview
 
-Setup
+Frontend (Nuxt) ↔ this Go gateway ↔ Hasura GraphQL ↔ Postgres
 
-1. Prereqs
+- The gateway signs JWTs that include Hasura claims so the frontend can call Hasura directly when appropriate.
+- Some operations are implemented as Hasura Actions that call into this service (image upload, user image upload, payment initialize).
+- Hasura event triggers (e.g. insert on `recipe_like`) call webhook endpoints in this service to create notifications.
 
-- Go 1.18+ (or your project's configured Go version).
-- Access to a Hasura GraphQL instance with a `users` table containing at least `id`, `email`, `name`, and `password` (bcrypt hashed).
+Quick start
+
+1. Prerequisites
+
+- Go 1.26
+- A Hasura instance (connected to Postgres) with the required tables tracked
+- Cloudinary account (for image uploads)
+- Chapa account (for payments)
 
 2. Environment variables
 
-Create a `.env` or export these variables in your environment:
+Set these in your environment or in a `.env` file:
 
-- PORT – port the service listens on (e.g. 8000)
-- HASURA_URL – full URL of your Hasura GraphQL endpoint
-- HASURA_GRAPHQL_ADMIN_SECRET – Hasura admin secret (if your Hasura is protected)
-- HASURA_JWT_SECRET – secret used to sign the HS256 tokens served to the frontend
+- `PORT` — port to run the service (e.g. `8000`)
+- `HASURA_URL` — Hasura GraphQL endpoint
+- `HASURA_GRAPHQL_ADMIN_SECRET` — Hasura admin secret (if applicable)
+- `HASURA_JWT_SECRET` — secret to sign HS256 tokens for Hasura
+- `CLOUDINARY_URL` / Cloudinary-specific envs as used in `clients/cloudinary` (cloud name, api key/secret)
+- `CHAPA_SECRET_KEY` — Chapa secret for payment API
 
-API
+3. Build & run
 
-- POST /v1/users
-	- Body: { "email": "user@example.com", "password": "plaintext" }
-	- Success: 200
-		{
-			"user": { "id": 123, "name": "Alice", "email": "alice@example.com" },
-			"token": "<JWT>"
-		}
-	- Errors: 400 (bad request), 401 (invalid credentials), 500 (server error)
+```bash
+go build && ./food-recipe
+```
 
-- GET /v1/me
-	- Header: Authorization: Bearer <JWT>
-	- Success: 200 { "id": 123, "name": "Alice", "email": "alice@example.com" }
-	- Errors: 401 (missing/invalid token), 500 (server error)
+HTTP Endpoints (mounted under `/v1`)
 
-Notes & gotchas
+- `POST /v1/login` — login (email + password) — returns JWT in body and Authorization header
+- `POST /v1/signup` — create a new user (Hasura insert via the gateway)
+- `POST /v1/me` — return current user (expects Hasura-compatible JWT in Authorization header)
+- `POST /v1/payment` — initialize Chapa payment (Hasura Action)
+- `GET  /v1/payment/verify` — verify Chapa payment (webhook/callback)
+- `POST /v1/upload-recipe-images` — Hasura Action to upload recipe images to Cloudinary
+- `POST /v1/upload-user-image` — Hasura Action to upload a user's avatar and update their `avatar_url`
+- `POST /v1/like-notification` — Hasura event webhook for `recipe_like` inserts (creates a notification record)
 
-- Passwords in Hasura must be bcrypt-hashed. The service uses `golang.org/x/crypto/bcrypt` to compare hashes.
-- JWT lifetime in code may be short by default (check `helpers.GenerateHasuraJWT`); adjust `exp` as needed.
-- The JWT must be HS256 and the frontend must attach it as `Authorization: Bearer <token>` to any requests.
-- The `sub` claim is used as the user id in the token. If your Hasura `id` type is integer, the token `sub` is still treated as a string — the service converts it appropriately when querying Hasura by primary key.
+Hasura integration points
 
-Further improvements (ideas)
+- The repo includes `clients/hasura` with GraphQL query and mutation structs used by the go-graphql-client.
+- Add Hasura Actions pointing to the relevant endpoints (image upload, user image upload, payment init).
+- Configure Hasura Event Triggers (e.g. `recipe_like` insert) to POST to `/v1/like-notification`.
 
-- Add refresh tokens for longer sessions.
-- Rate-limit login endpoint and add brute-force protections.
-- Add unit tests around middleware and token parsing.
+Frontend (Nuxt) integration suggestions
+
+- Use the JWT returned by `POST /v1/login` for subsequent Hasura requests (set `Authorization: Bearer <token>`).
+- For image uploads: call the Hasura Action that returns pre-signed or handled upload; the action returns the uploaded URL(s).
+- For real-time notifications: use Hasura Subscriptions on the `notifications` table filtered by `user_id`.
 
 Contact
 
-If you run into build or runtime errors, run `go build` locally and paste the error output; I can help fix any type or import errors.
+If you want me to update this README with more project-specific details (exact Hasura migrations, sample GraphQL queries, or a step-by-step deployment guide), tell me which part to expand.
