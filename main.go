@@ -56,6 +56,7 @@ func main() {
 	v1Router.Post("/payment", handlers.InitializePaymentHandler)
 	v1Router.Get("/payment/verify", handlers.VerifyPaymentHandler)
 	v1Router.Post("/upload-recipe-images", handlers.UploadRecipeImagesHandler)
+	v1Router.Post("/upload-user-image", handlers.UploadUserImageHandler)
 	v1Router.Post("/like-notification", handlers.LikeNotificationHandler)
 
 	router.Mount("/v1", v1Router)

@@ -34,3 +34,11 @@ var CreateNotificationMutation struct {
 		}
 	} `graphql:"insert_notifications(objects: {user_id: $user_id, message: $message, initiator_id: $initiator_id})"`
 }
+
+var UpdateUserAvatar struct {
+	UpdateUsers struct {
+		Returning []struct {
+			ID string `graphql:"id"`
+		}
+	} `graphql:"update_user(where: {id: {_eq: $id}}, _set: {avatar_url: $avatar_url})"`
+}

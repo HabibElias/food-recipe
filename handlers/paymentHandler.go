@@ -50,7 +50,6 @@ type InitializePaymentOutput struct {
 	Status      string `json:"status"`
 }
 
-// InitializePaymentHandler handles Hasura Action
 func InitializePaymentHandler(w http.ResponseWriter, r *http.Request) {
 	var payload HasuraInput
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
