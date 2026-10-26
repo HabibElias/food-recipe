@@ -67,8 +67,13 @@ func (s *PaymentService) InitializePayment(
 	txRef := fmt.Sprintf("TX-%d", time.Now().UnixNano())
 
 	callbackURL := ""
-	if s.cfg != nil {
-		callbackURL = s.cfg.App.CallbackURL + "/v1/payment/verify"
+	if s.cfg != nil && s.cfg.App.CallbackURL != "" {
+		callbackURL = strings.TrimRight(s.cfg.App.CallbackURL, "/") + "/v1/payment/verify"
+	}
+
+	phone := strings.TrimSpace(input.Phone)
+	if phone == "" {
+		phone = "0900123456"
 	}
 
 	initParams := ports.PaymentInitParams{
@@ -78,7 +83,7 @@ func (s *PaymentService) InitializePayment(
 		LastName:    user.LastName,
 		Email:       user.Email,
 		TxRef:       txRef,
-		Phone:       "0900123456",
+		Phone:       phone,
 		CallbackURL: callbackURL,
 	}
 
@@ -120,6 +125,12 @@ func (s *PaymentService) VerifyPayment(ctx context.Context, txRef string) (*dto.
 		return nil, fmt.Errorf("%w: transaction reference is required", domainerrors.ErrInvalidInput)
 	}
 
+	// Verify the transaction exists locally before invoking external payment gateway
+	tx, err := s.paymentRepo.GetTransactionByRef(ctx, txRef)
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := s.gateway.Verify(ctx, txRef)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", domainerrors.ErrPaymentFailed, err)
@@ -130,11 +141,6 @@ func (s *PaymentService) VerifyPayment(ctx context.Context, txRef string) (*dto.
 			msg = res.Message
 		}
 		return nil, fmt.Errorf("%w: %s", domainerrors.ErrPaymentFailed, msg)
-	}
-
-	tx, err := s.paymentRepo.GetTransactionByRef(ctx, txRef)
-	if err != nil {
-		return nil, err
 	}
 
 	payment := &entities.Payment{

@@ -74,7 +74,7 @@ func (m *mockPaymentGateway) Verify(ctx context.Context, txRef string) (*ports.P
 func TestPaymentService_InitializePayment(t *testing.T) {
 	cfg := &config.Config{
 		App: config.AppConfig{
-			CallbackURL: "https://api.example.com",
+			CallbackURL: "https://api.example.com/",
 		},
 	}
 	ctx := context.Background()
@@ -87,7 +87,7 @@ func TestPaymentService_InitializePayment(t *testing.T) {
 		LastName:  "Doe",
 	}
 
-	t.Run("successful initialization", func(t *testing.T) {
+	t.Run("successful initialization with custom phone and trailing slash stripped", func(t *testing.T) {
 		var capturedTx *entities.Transaction
 		var capturedParams ports.PaymentInitParams
 
@@ -122,6 +122,7 @@ func TestPaymentService_InitializePayment(t *testing.T) {
 		output, err := svc.InitializePayment(ctx, dto.InitializePaymentInputDTO{
 			Amount:   250.50,
 			RecipeID: 99,
+			Phone:    "0911998877",
 		}, userID.String())
 
 		if err != nil {
@@ -144,8 +145,11 @@ func TestPaymentService_InitializePayment(t *testing.T) {
 		if capturedParams.Email != "user@example.com" {
 			t.Errorf("expected email user@example.com, got %s", capturedParams.Email)
 		}
+		if capturedParams.Phone != "0911998877" {
+			t.Errorf("expected phone 0911998877, got %s", capturedParams.Phone)
+		}
 		if capturedParams.CallbackURL != "https://api.example.com/v1/payment/verify" {
-			t.Errorf("expected callback URL, got %s", capturedParams.CallbackURL)
+			t.Errorf("expected callback URL without duplicate slash, got %s", capturedParams.CallbackURL)
 		}
 
 		// Verify transaction record
@@ -154,6 +158,38 @@ func TestPaymentService_InitializePayment(t *testing.T) {
 		}
 		if capturedTx.RecipeID != 99 || capturedTx.UserID != userID || capturedTx.Amount != 250.50 {
 			t.Errorf("unexpected transaction saved: %+v", capturedTx)
+		}
+	})
+
+	t.Run("default phone fallback when omitted", func(t *testing.T) {
+		var capturedParams ports.PaymentInitParams
+
+		userRepo := &mockUserRepo{
+			getByIDFn: func(ctx context.Context, id uuid.UUID) (*entities.User, error) {
+				return testUser, nil
+			},
+		}
+
+		gw := &mockPaymentGateway{
+			initFn: func(ctx context.Context, params ports.PaymentInitParams) (*ports.PaymentInitResult, error) {
+				capturedParams = params
+				return &ports.PaymentInitResult{
+					Status: "success",
+				}, nil
+			},
+		}
+
+		svc := NewPaymentService(&mockPaymentRepo{}, userRepo, gw, cfg)
+		_, err := svc.InitializePayment(ctx, dto.InitializePaymentInputDTO{
+			Amount:   50,
+			RecipeID: 1,
+		}, userID.String())
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if capturedParams.Phone != "0900123456" {
+			t.Errorf("expected default phone 0900123456, got %s", capturedParams.Phone)
 		}
 	})
 
@@ -331,13 +367,41 @@ func TestPaymentService_VerifyPayment(t *testing.T) {
 		}
 	})
 
+	t.Run("transaction not found in database skips gateway call", func(t *testing.T) {
+		gatewayCalled := false
+		payRepo := &mockPaymentRepo{
+			getTxFn: func(ctx context.Context, ref string) (*entities.Transaction, error) {
+				return nil, domainerrors.ErrTransactionNotFound
+			},
+		}
+		gw := &mockPaymentGateway{
+			verifyFn: func(ctx context.Context, ref string) (*ports.PaymentVerifyResult, error) {
+				gatewayCalled = true
+				return &ports.PaymentVerifyResult{Status: "success"}, nil
+			},
+		}
+		svc := NewPaymentService(payRepo, &mockUserRepo{}, gw, nil)
+		_, err := svc.VerifyPayment(ctx, txRef)
+		if !errors.Is(err, domainerrors.ErrTransactionNotFound) {
+			t.Errorf("expected ErrTransactionNotFound, got %v", err)
+		}
+		if gatewayCalled {
+			t.Error("expected gateway.Verify NOT to be called if transaction is not found locally")
+		}
+	})
+
 	t.Run("gateway verification error", func(t *testing.T) {
+		payRepo := &mockPaymentRepo{
+			getTxFn: func(ctx context.Context, ref string) (*entities.Transaction, error) {
+				return existingTx, nil
+			},
+		}
 		gw := &mockPaymentGateway{
 			verifyFn: func(ctx context.Context, ref string) (*ports.PaymentVerifyResult, error) {
 				return nil, errors.New("chapa timeout")
 			},
 		}
-		svc := NewPaymentService(&mockPaymentRepo{}, &mockUserRepo{}, gw, nil)
+		svc := NewPaymentService(payRepo, &mockUserRepo{}, gw, nil)
 		_, err := svc.VerifyPayment(ctx, txRef)
 		if !errors.Is(err, domainerrors.ErrPaymentFailed) {
 			t.Errorf("expected ErrPaymentFailed, got %v", err)
@@ -345,6 +409,11 @@ func TestPaymentService_VerifyPayment(t *testing.T) {
 	})
 
 	t.Run("gateway status not success", func(t *testing.T) {
+		payRepo := &mockPaymentRepo{
+			getTxFn: func(ctx context.Context, ref string) (*entities.Transaction, error) {
+				return existingTx, nil
+			},
+		}
 		gw := &mockPaymentGateway{
 			verifyFn: func(ctx context.Context, ref string) (*ports.PaymentVerifyResult, error) {
 				return &ports.PaymentVerifyResult{
@@ -353,23 +422,10 @@ func TestPaymentService_VerifyPayment(t *testing.T) {
 				}, nil
 			},
 		}
-		svc := NewPaymentService(&mockPaymentRepo{}, &mockUserRepo{}, gw, nil)
+		svc := NewPaymentService(payRepo, &mockUserRepo{}, gw, nil)
 		_, err := svc.VerifyPayment(ctx, txRef)
 		if !errors.Is(err, domainerrors.ErrPaymentFailed) {
 			t.Errorf("expected ErrPaymentFailed, got %v", err)
-		}
-	})
-
-	t.Run("transaction not found in database", func(t *testing.T) {
-		payRepo := &mockPaymentRepo{
-			getTxFn: func(ctx context.Context, ref string) (*entities.Transaction, error) {
-				return nil, domainerrors.ErrTransactionNotFound
-			},
-		}
-		svc := NewPaymentService(payRepo, &mockUserRepo{}, &mockPaymentGateway{}, nil)
-		_, err := svc.VerifyPayment(ctx, txRef)
-		if !errors.Is(err, domainerrors.ErrTransactionNotFound) {
-			t.Errorf("expected ErrTransactionNotFound, got %v", err)
 		}
 	})
 }

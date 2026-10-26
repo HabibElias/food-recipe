@@ -47,12 +47,18 @@ func (s *MediaService) UploadRecipeImages(
 		return nil, fmt.Errorf("%w: at least one recipe image is required", domainerrors.ErrInvalidInput)
 	}
 
+	// Pre-validate all images before starting uploads to prevent partial uploads
+	formattedURIs := make([]string, len(input.RecipeImages))
 	for i, img := range input.RecipeImages {
 		formattedURI, err := validateAndFormatImage(img.ImageName, img.ImageType, img.ImageBase64Str)
 		if err != nil {
 			return nil, fmt.Errorf("%w: image %d: %v", domainerrors.ErrInvalidInput, i+1, err)
 		}
+		formattedURIs[i] = formattedURI
+	}
 
+	for i, img := range input.RecipeImages {
+		formattedURI := formattedURIs[i]
 		publicID := fmt.Sprintf("recipe_%d_%s_%d", input.RecipeID, sanitizeFileName(img.ImageName), time.Now().UnixNano())
 
 		imageURL, err := s.storage.UploadBase64Image(ctx, formattedURI, publicID, "recipes")
@@ -79,16 +85,18 @@ func (s *MediaService) UploadUserImage(
 	input dto.UploadUserImageInputDTO,
 	sessionUserID string,
 ) (*dto.UploadUserImageOutputDTO, error) {
-	userIDStr := strings.TrimSpace(input.UserID)
-	if userIDStr == "" {
-		userIDStr = strings.TrimSpace(sessionUserID)
+	targetUserID := strings.TrimSpace(sessionUserID)
+	if targetUserID == "" {
+		targetUserID = strings.TrimSpace(input.UserID)
+	} else if input.UserID != "" && strings.TrimSpace(input.UserID) != targetUserID {
+		return nil, fmt.Errorf("%w: unauthorized to update avatar for another user", domainerrors.ErrUnauthorized)
 	}
 
-	if userIDStr == "" {
+	if targetUserID == "" {
 		return nil, fmt.Errorf("%w: user_id is required", domainerrors.ErrInvalidInput)
 	}
 
-	uid, err := uuid.Parse(userIDStr)
+	uid, err := uuid.Parse(targetUserID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: invalid user_id", domainerrors.ErrInvalidInput)
 	}
@@ -207,8 +215,9 @@ func sanitizeFileName(name string) string {
 		result = strings.ReplaceAll(result, char, "_")
 	}
 
-	if len(result) > 50 {
-		result = result[:50]
+	runes := []rune(result)
+	if len(runes) > 50 {
+		result = string(runes[:50])
 	}
 
 	return result

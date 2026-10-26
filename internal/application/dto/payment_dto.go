@@ -5,6 +5,7 @@ import "encoding/json"
 type InitializePaymentInputDTO struct {
 	Amount   float64 `json:"amount"`
 	RecipeID int     `json:"recipe_id"`
+	Phone    string  `json:"phone,omitempty"`
 }
 
 type InitializePaymentOutputDTO struct {
@@ -24,6 +25,7 @@ type InitializePaymentActionPayloadDTO struct {
 	Input            struct {
 		Amount   float64                    `json:"amount"`
 		RecipeID int                        `json:"recipe_id"`
+		Phone    string                     `json:"phone,omitempty"`
 		Input    *InitializePaymentInputDTO `json:"input,omitempty"`
 	} `json:"input"`
 }
@@ -42,6 +44,7 @@ func (p InitializePaymentActionPayloadDTO) GetSessionUserID() string {
 func (p InitializePaymentActionPayloadDTO) ToInputDTO() InitializePaymentInputDTO {
 	amount := p.Input.Amount
 	recipeID := p.Input.RecipeID
+	phone := p.Input.Phone
 	if p.Input.Input != nil {
 		if p.Input.Input.Amount != 0 {
 			amount = p.Input.Input.Amount
@@ -49,10 +52,14 @@ func (p InitializePaymentActionPayloadDTO) ToInputDTO() InitializePaymentInputDT
 		if p.Input.Input.RecipeID != 0 {
 			recipeID = p.Input.Input.RecipeID
 		}
+		if p.Input.Input.Phone != "" {
+			phone = p.Input.Input.Phone
+		}
 	}
 	return InitializePaymentInputDTO{
 		Amount:   amount,
 		RecipeID: recipeID,
+		Phone:    phone,
 	}
 }
 
@@ -62,10 +69,14 @@ func (p *InitializePaymentActionPayloadDTO) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if svRaw, ok := raw["session_variables"]; ok {
-		_ = json.Unmarshal(svRaw, &p.SessionVariables)
+		if err := json.Unmarshal(svRaw, &p.SessionVariables); err != nil {
+			return err
+		}
 	}
 	if inRaw, ok := raw["input"]; ok {
-		_ = json.Unmarshal(inRaw, &p.Input)
+		if err := json.Unmarshal(inRaw, &p.Input); err != nil {
+			return err
+		}
 	}
 	return nil
 }

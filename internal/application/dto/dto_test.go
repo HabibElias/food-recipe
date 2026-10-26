@@ -8,14 +8,15 @@ import (
 )
 
 func TestPaymentActionPayloadDTO(t *testing.T) {
-	t.Run("unmarshals flat input with session map", func(t *testing.T) {
+	t.Run("unmarshals flat input with session map and phone", func(t *testing.T) {
 		rawJSON := `{
 			"session_variables": {
 				"x-hasura-user-id": "123e4567-e89b-12d3-a456-426614174000"
 			},
 			"input": {
 				"amount": 99.5,
-				"recipe_id": 42
+				"recipe_id": 42,
+				"phone": "0911223344"
 			}
 		}`
 		var payload InitializePaymentActionPayloadDTO
@@ -29,12 +30,12 @@ func TestPaymentActionPayloadDTO(t *testing.T) {
 		}
 
 		inputDTO := payload.ToInputDTO()
-		if inputDTO.Amount != 99.5 || inputDTO.RecipeID != 42 {
+		if inputDTO.Amount != 99.5 || inputDTO.RecipeID != 42 || inputDTO.Phone != "0911223344" {
 			t.Errorf("unexpected inputDTO values: %+v", inputDTO)
 		}
 	})
 
-	t.Run("unmarshals nested input", func(t *testing.T) {
+	t.Run("unmarshals nested input with phone", func(t *testing.T) {
 		rawJSON := `{
 			"session_variables": {
 				"x-hasura-user-id": "123e4567-e89b-12d3-a456-426614174000"
@@ -42,7 +43,8 @@ func TestPaymentActionPayloadDTO(t *testing.T) {
 			"input": {
 				"input": {
 					"amount": 150.0,
-					"recipe_id": 10
+					"recipe_id": 10,
+					"phone": "0922334455"
 				}
 			}
 		}`
@@ -53,7 +55,7 @@ func TestPaymentActionPayloadDTO(t *testing.T) {
 		}
 
 		inputDTO := payload.ToInputDTO()
-		if inputDTO.Amount != 150.0 || inputDTO.RecipeID != 10 {
+		if inputDTO.Amount != 150.0 || inputDTO.RecipeID != 10 || inputDTO.Phone != "0922334455" {
 			t.Errorf("unexpected inputDTO values: %+v", inputDTO)
 		}
 	})
@@ -62,6 +64,28 @@ func TestPaymentActionPayloadDTO(t *testing.T) {
 		var payload InitializePaymentActionPayloadDTO
 		if payload.GetSessionUserID() != "" {
 			t.Errorf("expected empty string, got %s", payload.GetSessionUserID())
+		}
+	})
+
+	t.Run("returns error on malformed session_variables JSON", func(t *testing.T) {
+		rawJSON := `{
+			"session_variables": "not-a-map-or-object"
+		}`
+		var payload InitializePaymentActionPayloadDTO
+		err := json.Unmarshal([]byte(rawJSON), &payload)
+		if err == nil {
+			t.Error("expected unmarshal error on malformed session_variables, got nil")
+		}
+	})
+
+	t.Run("returns error on malformed input JSON", func(t *testing.T) {
+		rawJSON := `{
+			"input": "not-an-object"
+		}`
+		var payload InitializePaymentActionPayloadDTO
+		err := json.Unmarshal([]byte(rawJSON), &payload)
+		if err == nil {
+			t.Error("expected unmarshal error on malformed input, got nil")
 		}
 	})
 }

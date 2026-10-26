@@ -121,6 +121,43 @@ func TestMediaService_UploadRecipeImages(t *testing.T) {
 		}
 	})
 
+	t.Run("pre-validation prevents partial upload when subsequent image fails", func(t *testing.T) {
+		uploadCalled := false
+		storage := &mockFileStorage{
+			uploadFn: func(ctx context.Context, base64Data, publicID, folder string) (string, error) {
+				uploadCalled = true
+				return "https://cloudinary.com/sample.jpg", nil
+			},
+		}
+
+		svc := NewMediaService(storage, &mockRecipeRepo{}, &mockUserRepo{})
+		input := dto.UploadRecipeImagesInputDTO{
+			RecipeID: 10,
+			RecipeImages: []dto.RecipeImageItemDTO{
+				{
+					ImageName:      "valid_first_image.jpg",
+					ImageType:      "jpg",
+					ImageBase64Str: smallData,
+					IsThumbnail:    true,
+				},
+				{
+					ImageName:      "invalid_second_image.jpg",
+					ImageType:      "jpg",
+					ImageBase64Str: "bad-base64!!!",
+					IsThumbnail:    false,
+				},
+			},
+		}
+
+		_, err := svc.UploadRecipeImages(ctx, input)
+		if !errors.Is(err, domainerrors.ErrInvalidInput) {
+			t.Fatalf("expected ErrInvalidInput, got %v", err)
+		}
+		if uploadCalled {
+			t.Error("expected storage upload NOT to be called due to pre-validation failure")
+		}
+	})
+
 	t.Run("invalid recipe_id <= 0", func(t *testing.T) {
 		svc := NewMediaService(&mockFileStorage{}, &mockRecipeRepo{}, &mockUserRepo{})
 		_, err := svc.UploadRecipeImages(ctx, dto.UploadRecipeImagesInputDTO{
@@ -241,8 +278,9 @@ func TestMediaService_UploadUserImage(t *testing.T) {
 	ctx := context.Background()
 	smallData := base64.StdEncoding.EncodeToString([]byte("user photo bytes"))
 	userID := uuid.New()
+	anotherUserID := uuid.New()
 
-	t.Run("successful upload with user_id in input", func(t *testing.T) {
+	t.Run("successful upload with user_id in input matching sessionUserID", func(t *testing.T) {
 		var updatedUserID uuid.UUID
 		var updatedURL string
 
@@ -271,7 +309,7 @@ func TestMediaService_UploadUserImage(t *testing.T) {
 				ImageType:      "png",
 				ImageBase64Str: smallData,
 			},
-		}, "")
+		}, userID.String())
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -284,6 +322,22 @@ func TestMediaService_UploadUserImage(t *testing.T) {
 		}
 		if updatedUserID != userID || updatedURL != "https://cloudinary.com/avatar.jpg" {
 			t.Errorf("unexpected avatar update values: uid=%v, url=%s", updatedUserID, updatedURL)
+		}
+	})
+
+	t.Run("IDOR prevention: mismatch between sessionUserID and input.UserID", func(t *testing.T) {
+		svc := NewMediaService(&mockFileStorage{}, &mockRecipeRepo{}, &mockUserRepo{})
+		_, err := svc.UploadUserImage(ctx, dto.UploadUserImageInputDTO{
+			UserID: anotherUserID.String(),
+			Image: dto.UserImageItemDTO{
+				ImageName:      "avatar.png",
+				ImageType:      "png",
+				ImageBase64Str: smallData,
+			},
+		}, userID.String())
+
+		if !errors.Is(err, domainerrors.ErrUnauthorized) {
+			t.Fatalf("expected ErrUnauthorized when attempting IDOR avatar upload, got %v", err)
 		}
 	})
 
@@ -345,6 +399,15 @@ func TestMediaService_UploadUserImage(t *testing.T) {
 		}, "")
 		if !errors.Is(err, domainerrors.ErrInvalidInput) {
 			t.Errorf("expected ErrInvalidInput, got %v", err)
+		}
+	})
+
+	t.Run("sanitizeFileName handles unicode runes properly", func(t *testing.T) {
+		longUnicodeName := "ምግብ_አሰራር_በጣም_ጥሩ_የሆነ_የባህላዊ_የኢትዮጵያ_ምግብ_ጣፋጭ_ወጥ.jpg"
+		sanitized := sanitizeFileName(longUnicodeName)
+		runes := []rune(sanitized)
+		if len(runes) > 50 {
+			t.Errorf("expected at most 50 runes, got %d", len(runes))
 		}
 	})
 }
