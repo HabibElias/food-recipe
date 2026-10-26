@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"go/food-recipe/internal/infrastructure/validator"
+	"go/food-recipe/internal/pkg/validator"
 
 	"github.com/google/uuid"
 )

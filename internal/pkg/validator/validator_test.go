@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	domainerrors "go/food-recipe/internal/domain/errors"
-	ivalidator "go/food-recipe/internal/infrastructure/validator"
+	ivalidator "go/food-recipe/internal/pkg/validator"
 )
 
 type TestUser struct {

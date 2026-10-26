@@ -6,7 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	domainerrors "go/food-recipe/internal/domain/errors"
-	"go/food-recipe/internal/infrastructure/validator"
+	"go/food-recipe/internal/pkg/validator"
 )
 
 // HandleDomainError maps domain errors to appropriate HTTP responses.
@@ -16,7 +16,7 @@ func HandleDomainError(c *fiber.Ctx, err error) error {
 	}
 
 	var valErr *validator.ValidationError
-	if errors.As(err, &valErr) {
+	if errors.As(err, &valErr) && valErr != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": valErr.Error(),
 			"errors":  valErr.Errors,

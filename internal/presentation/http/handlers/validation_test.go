@@ -14,7 +14,7 @@ import (
 	"go/food-recipe/internal/config"
 	"go/food-recipe/internal/domain/entities"
 	domainerrors "go/food-recipe/internal/domain/errors"
-	"go/food-recipe/internal/infrastructure/validator"
+	"go/food-recipe/internal/pkg/validator"
 	"go/food-recipe/internal/presentation/http/handlers"
 
 	"github.com/gofiber/fiber/v2"

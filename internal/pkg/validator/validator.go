@@ -27,6 +27,8 @@ func init() {
 }
 
 // RegisterValidation adds a custom validation function to the validator instance.
+// Note: This must be called during initialization (e.g. in init() or application startup in main.go)
+// before the HTTP server starts handling concurrent requests.
 func RegisterValidation(tag string, fn validator.Func) error {
 	return validate.RegisterValidation(tag, fn)
 }

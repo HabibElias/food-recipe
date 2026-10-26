@@ -10,7 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	domainerrors "go/food-recipe/internal/domain/errors"
-	"go/food-recipe/internal/infrastructure/validator"
+	"go/food-recipe/internal/pkg/validator"
 	"go/food-recipe/internal/presentation/response"
 )
 

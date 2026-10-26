@@ -1,6 +1,6 @@
 package dto
 
-import "go/food-recipe/internal/infrastructure/validator"
+import "go/food-recipe/internal/pkg/validator"
 
 // Validatable represents an input DTO that can validate itself.
 type Validatable interface {

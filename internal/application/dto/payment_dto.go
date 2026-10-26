@@ -3,7 +3,7 @@ package dto
 import (
 	"encoding/json"
 
-	"go/food-recipe/internal/infrastructure/validator"
+	"go/food-recipe/internal/pkg/validator"
 )
 
 type InitializePaymentInputDTO struct {
