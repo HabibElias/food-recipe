@@ -65,9 +65,12 @@ func TestNotificationService_HandleLikeNotification(t *testing.T) {
 			},
 		}
 
-		err := svc.HandleLikeNotification(ctx, payload)
+		out, err := svc.HandleLikeNotification(ctx, payload)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+		if out == nil || !out.OK || out.Skipped {
+			t.Errorf("expected out.OK=true, out.Skipped=false, got %+v", out)
 		}
 
 		if createdNotification == nil {
@@ -116,9 +119,12 @@ func TestNotificationService_HandleLikeNotification(t *testing.T) {
 			},
 		}
 
-		err := svc.HandleLikeNotification(ctx, payload)
+		out, err := svc.HandleLikeNotification(ctx, payload)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+		if out == nil || !out.OK || !out.Skipped {
+			t.Errorf("expected out.OK=true, out.Skipped=true, got %+v", out)
 		}
 		if recipeCalled || notifCalled {
 			t.Error("expected non-insert event to be skipped without repo calls")
@@ -138,7 +144,7 @@ func TestNotificationService_HandleLikeNotification(t *testing.T) {
 				},
 			},
 		}
-		err := svc.HandleLikeNotification(ctx, payload)
+		_, err := svc.HandleLikeNotification(ctx, payload)
 		if !errors.Is(err, domainerrors.ErrInvalidInput) {
 			t.Errorf("expected ErrInvalidInput, got %v", err)
 		}
@@ -157,7 +163,7 @@ func TestNotificationService_HandleLikeNotification(t *testing.T) {
 				},
 			},
 		}
-		err := svc.HandleLikeNotification(ctx, payload)
+		_, err := svc.HandleLikeNotification(ctx, payload)
 		if !errors.Is(err, domainerrors.ErrInvalidInput) {
 			t.Errorf("expected ErrInvalidInput, got %v", err)
 		}
@@ -181,7 +187,7 @@ func TestNotificationService_HandleLikeNotification(t *testing.T) {
 				},
 			},
 		}
-		err := svc.HandleLikeNotification(ctx, payload)
+		_, err := svc.HandleLikeNotification(ctx, payload)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -210,7 +216,7 @@ func TestNotificationService_HandleLikeNotification(t *testing.T) {
 				},
 			},
 		}
-		err := svc.HandleLikeNotification(ctx, payload)
+		_, err := svc.HandleLikeNotification(ctx, payload)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}

@@ -27,25 +27,28 @@ func NewNotificationService(
 	}
 }
 
-func (s *NotificationService) HandleLikeNotification(ctx context.Context, payload dto.LikeEventPayloadDTO) error {
+func (s *NotificationService) HandleLikeNotification(
+	ctx context.Context,
+	payload dto.LikeEventPayloadDTO,
+) (*dto.LikeNotificationOutputDTO, error) {
 	// Only handle INSERT events; others are skipped without error
 	if !strings.EqualFold(payload.Event.Op, "INSERT") {
-		return nil
+		return &dto.LikeNotificationOutputDTO{OK: true, Skipped: true}, nil
 	}
 
 	likeID := payload.Event.Data.New.ID
 	if likeID == uuid.Nil {
-		return fmt.Errorf("%w: like id is required", domainerrors.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: like id is required", domainerrors.ErrInvalidInput)
 	}
 
 	initiatorID := payload.Event.Data.New.UserID
 	if initiatorID == uuid.Nil {
-		return fmt.Errorf("%w: initiator user id is required", domainerrors.ErrInvalidInput)
+		return nil, fmt.Errorf("%w: initiator user id is required", domainerrors.ErrInvalidInput)
 	}
 
 	ownerUUID, likerUsername, err := s.recipeRepo.GetCreatorFromLikeID(ctx, likeID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	notification := &entities.Notification{
@@ -55,8 +58,8 @@ func (s *NotificationService) HandleLikeNotification(ctx context.Context, payloa
 	}
 
 	if err := s.notificationRepo.Create(ctx, notification); err != nil {
-		return fmt.Errorf("failed to create notification: %w", err)
+		return nil, fmt.Errorf("failed to create notification: %w", err)
 	}
 
-	return nil
+	return &dto.LikeNotificationOutputDTO{OK: true}, nil
 }

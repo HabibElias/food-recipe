@@ -21,3 +21,8 @@ type LikeEventDTO struct {
 type LikeEventPayloadDTO struct {
 	Event LikeEventDTO `json:"event"`
 }
+
+type LikeNotificationOutputDTO struct {
+	OK      bool `json:"ok"`
+	Skipped bool `json:"skipped,omitempty"`
+}

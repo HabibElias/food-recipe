@@ -128,3 +128,29 @@ func TestLikeEventPayloadDTO(t *testing.T) {
 		t.Errorf("expected recipeID 12, got %d", payload.Event.Data.New.RecipeID)
 	}
 }
+
+func TestLikeNotificationOutputDTO(t *testing.T) {
+	t.Run("marshals success output", func(t *testing.T) {
+		out := LikeNotificationOutputDTO{OK: true}
+		bytes, err := json.Marshal(out)
+		if err != nil {
+			t.Fatalf("unexpected marshal error: %v", err)
+		}
+		expected := `{"ok":true}`
+		if string(bytes) != expected {
+			t.Errorf("expected %s, got %s", expected, string(bytes))
+		}
+	})
+
+	t.Run("marshals skipped output", func(t *testing.T) {
+		out := LikeNotificationOutputDTO{OK: true, Skipped: true}
+		bytes, err := json.Marshal(out)
+		if err != nil {
+			t.Fatalf("unexpected marshal error: %v", err)
+		}
+		expected := `{"ok":true,"skipped":true}`
+		if string(bytes) != expected {
+			t.Errorf("expected %s, got %s", expected, string(bytes))
+		}
+	})
+}
