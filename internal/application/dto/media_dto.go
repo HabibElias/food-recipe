@@ -1,6 +1,6 @@
 package dto
 
-import "go/food-recipe/internal/presentation/validator"
+import "go/food-recipe/internal/infrastructure/validator"
 
 type RecipeImageItemDTO struct {
 	ImageName      string `json:"image_name" validate:"required"`
@@ -36,7 +36,7 @@ type UserImageItemDTO struct {
 }
 
 type UploadUserImageInputDTO struct {
-	UserID string           `json:"user_id" validate:"required,uuid"`
+	UserID string           `json:"user_id" validate:"omitempty,uuid"`
 	Image  UserImageItemDTO `json:"image" validate:"required"`
 }
 

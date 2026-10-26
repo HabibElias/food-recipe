@@ -283,7 +283,7 @@ func TestSignupInputDTO_Validate(t *testing.T) {
 
 	t.Run("short username fails", func(t *testing.T) {
 		bad := valid
-		bad.Username = "jo"
+		bad.Username = "john" // 4 characters, min is 5
 		if err := bad.Validate(); err == nil {
 			t.Fatal("expected error for short username, got nil")
 		}
@@ -523,13 +523,13 @@ func TestUploadUserImageInputDTO_Validate(t *testing.T) {
 		}
 	})
 
-	t.Run("empty user ID fails", func(t *testing.T) {
+	t.Run("empty user ID passes", func(t *testing.T) {
 		dto := UploadUserImageInputDTO{
 			UserID: "",
 			Image:  validImage,
 		}
-		if err := dto.Validate(); err == nil {
-			t.Fatal("expected error for empty user_id, got nil")
+		if err := dto.Validate(); err != nil {
+			t.Fatalf("expected nil error for empty user_id, got: %v", err)
 		}
 	})
 
@@ -640,6 +640,47 @@ func TestLikeEventPayloadDTO_Validate(t *testing.T) {
 		}
 		if !errors.Is(err, domainerrors.ErrInvalidInput) {
 			t.Errorf("expected ErrInvalidInput, got: %v", err)
+		}
+	})
+
+	t.Run("event with empty data fails", func(t *testing.T) {
+		dto := LikeEventPayloadDTO{
+			Event: LikeEventDTO{
+				Op: "INSERT",
+			},
+		}
+		if err := dto.Validate(); err == nil {
+			t.Fatal("expected error for empty data in event, got nil")
+		}
+	})
+
+	t.Run("event with empty new in data fails", func(t *testing.T) {
+		dto := LikeEventPayloadDTO{
+			Event: LikeEventDTO{
+				Op:   "INSERT",
+				Data: LikeEventDataDTO{},
+			},
+		}
+		if err := dto.Validate(); err == nil {
+			t.Fatal("expected error for empty new in event data, got nil")
+		}
+	})
+
+	t.Run("event with invalid new data fails", func(t *testing.T) {
+		dto := LikeEventPayloadDTO{
+			Event: LikeEventDTO{
+				Op: "INSERT",
+				Data: LikeEventDataDTO{
+					New: LikeEventDataNewDTO{
+						ID:       uuid.Nil,
+						UserID:   uuid.New(),
+						RecipeID: 0,
+					},
+				},
+			},
+		}
+		if err := dto.Validate(); err == nil {
+			t.Fatal("expected error for invalid new in event data, got nil")
 		}
 	})
 }

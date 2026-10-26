@@ -35,8 +35,8 @@ graph TD
 
 **Files:**
 - Modify: `go.mod`
-- Create: `internal/presentation/validator/validator.go`
-- Test: `internal/presentation/validator/validator_test.go`
+- Create: `internal/infrastructure/validator/validator.go`
+- Test: `internal/infrastructure/validator/validator_test.go`
 
 **Interfaces:**
 - Produces:
@@ -50,16 +50,16 @@ graph TD
   Run `go get github.com/go-playground/validator/v10` and `go mod vendor`.
 
 - [ ] **Step 2: Write failing unit test for `ValidateStruct`**
-  Create `internal/presentation/validator/validator_test.go` asserting JSON tag extraction, `required`, `email`, `min`, `max`, `gt`, and `Unwrap()` behavior.
+  Create `internal/infrastructure/validator/validator_test.go` asserting JSON tag extraction, `required`, `email`, `min`, `max`, `gt`, and `Unwrap()` behavior.
 
 - [ ] **Step 3: Run the test to confirm it fails**
-  Run `go test ./internal/presentation/validator`.
+  Run `go test ./internal/infrastructure/validator`.
 
 - [ ] **Step 4: Implement `validator.go`**
-  Create `internal/presentation/validator/validator.go` with JSON tag registration, `FieldError`, `ValidationError`, custom error message formatting, and `ValidateStruct`.
+  Create `internal/infrastructure/validator/validator.go` with JSON tag registration, `FieldError`, `ValidationError`, custom error message formatting, and `ValidateStruct`.
 
 - [ ] **Step 5: Run tests to verify they pass**
-  Run `go test -v ./internal/presentation/validator`.
+  Run `go test -v ./internal/infrastructure/validator`.
 
 - [ ] **Step 6: Commit**
   Commit Task 1 changes.

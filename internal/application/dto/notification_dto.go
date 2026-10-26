@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"go/food-recipe/internal/presentation/validator"
+	"go/food-recipe/internal/infrastructure/validator"
 
 	"github.com/google/uuid"
 )
@@ -18,12 +18,12 @@ func (d LikeEventDataNewDTO) Validate() error {
 }
 
 type LikeEventDataDTO struct {
-	New LikeEventDataNewDTO `json:"new"`
+	New LikeEventDataNewDTO `json:"new" validate:"required"`
 }
 
 type LikeEventDTO struct {
 	Op   string           `json:"op"`
-	Data LikeEventDataDTO `json:"data"`
+	Data LikeEventDataDTO `json:"data" validate:"required"`
 }
 
 type LikeEventPayloadDTO struct {

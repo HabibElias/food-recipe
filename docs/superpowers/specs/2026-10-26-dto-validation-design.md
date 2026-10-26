@@ -19,8 +19,8 @@ Implement a robust, centralized DTO validation mechanism matching the Clean Arch
 
 ## 2. Architecture & Components
 
-### 2.1 Validator Utility (`internal/presentation/validator`)
-Located in `internal/presentation/validator/validator.go`:
+### 2.1 Validator Utility (`internal/infrastructure/validator`)
+Located in `internal/infrastructure/validator/validator.go`:
 
 ```go
 package validator
@@ -229,7 +229,7 @@ This guarantees that Hasura Actions receive the standard `{"message": "..."}` fo
 ## 3. Testing Plan
 
 1. **Unit Tests for Validator Engine**:
-   - `internal/presentation/validator/validator_test.go`:
+   - `internal/infrastructure/validator/validator_test.go`:
      - Test valid struct passes with `nil`.
      - Test invalid email, missing required fields, min/max constraints, gt constraints.
      - Test JSON tag name mapping (e.g. `first_name` reported instead of `FirstName`).

@@ -1,6 +1,6 @@
 package dto
 
-import "go/food-recipe/internal/presentation/validator"
+import "go/food-recipe/internal/infrastructure/validator"
 
 // Validatable represents an input DTO that can validate itself.
 type Validatable interface {
@@ -25,7 +25,7 @@ type SignupInputDTO struct {
 	FirstName string `json:"first_name" validate:"required,min=2,max=100"`
 	LastName  string `json:"last_name" validate:"required,min=2,max=100"`
 	Email     string `json:"email" validate:"required,email"`
-	Username  string `json:"username" validate:"required,min=3,max=50"`
+	Username  string `json:"username" validate:"required,min=5,max=50"`
 	Password  string `json:"password" validate:"required,min=6,max=100"`
 }
 
