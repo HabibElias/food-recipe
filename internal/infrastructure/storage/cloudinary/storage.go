@@ -33,6 +33,9 @@ func (s *CloudinaryStorage) UploadBase64Image(ctx context.Context, base64Data, p
 	if s.client == nil {
 		return "", fmt.Errorf("cloudinary client not initialized")
 	}
+	if base64Data == "" {
+		return "", fmt.Errorf("base64 data cannot be empty")
+	}
 
 	result, err := s.client.Upload.Upload(ctx, base64Data, uploader.UploadParams{
 		PublicID:     publicID,
@@ -41,6 +44,9 @@ func (s *CloudinaryStorage) UploadBase64Image(ctx context.Context, base64Data, p
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to upload image: %w", err)
+	}
+	if result == nil {
+		return "", fmt.Errorf("empty response from cloudinary")
 	}
 
 	return result.SecureURL, nil

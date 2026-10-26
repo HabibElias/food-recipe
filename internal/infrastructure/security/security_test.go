@@ -45,6 +45,9 @@ func TestJWTGenerationAndVerification(t *testing.T) {
 	if claims["email"] != email {
 		t.Errorf("expected email %s, got %v", email, claims["email"])
 	}
+	if claims["iat"] == nil {
+		t.Error("expected iat claim to be present, got nil")
+	}
 
 	hasuraClaims, ok := claims["https://hasura.io/jwt/claims"].(map[string]interface{})
 	if !ok {
@@ -55,6 +58,22 @@ func TestJWTGenerationAndVerification(t *testing.T) {
 	}
 	if hasuraClaims["x-hasura-default-role"] != "user" {
 		t.Errorf("expected default role 'user', got %v", hasuraClaims["x-hasura-default-role"])
+	}
+
+	// Verify allowed roles does NOT contain admin
+	allowedRoles, ok := hasuraClaims["x-hasura-allowed-roles"].([]interface{})
+	if !ok {
+		t.Fatalf("expected x-hasura-allowed-roles slice, got %T", hasuraClaims["x-hasura-allowed-roles"])
+	}
+	for _, role := range allowedRoles {
+		if role == "admin" {
+			t.Errorf("security violation: x-hasura-allowed-roles should NOT contain 'admin'")
+		}
+	}
+
+	// Verify failure on empty userID
+	if _, err := security.GenerateHasuraJWT("", email, secret); err == nil {
+		t.Fatalf("expected error generating JWT with empty userID, got nil")
 	}
 
 	// Verify failure on wrong secret

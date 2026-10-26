@@ -40,4 +40,12 @@ func TestCloudinaryStorage_ValidConfig(t *testing.T) {
 	}
 
 	var _ ports.FileStorage = storage
+
+	_, err = storage.UploadBase64Image(context.Background(), "", "test_id", "test_folder")
+	if err == nil {
+		t.Fatal("expected error on empty base64Data, got nil")
+	}
+	if !strings.Contains(err.Error(), "base64 data cannot be empty") {
+		t.Errorf("expected 'base64 data cannot be empty' error, got %v", err)
+	}
 }

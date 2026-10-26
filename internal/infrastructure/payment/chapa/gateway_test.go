@@ -118,6 +118,30 @@ func TestChapaGateway_Initialize(t *testing.T) {
 			t.Fatal("expected error, got nil")
 		}
 	})
+
+	t.Run("nil response", func(t *testing.T) {
+		mockAPI := &mockChapaAPI{
+			paymentResponse: nil,
+			paymentErr:      nil,
+		}
+		gw := &ChapaGateway{client: mockAPI}
+
+		_, err := gw.Initialize(ctx, params)
+		if err == nil {
+			t.Fatal("expected error on nil response, got nil")
+		}
+	})
+
+	t.Run("context cancelled", func(t *testing.T) {
+		canceledCtx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		gw := &ChapaGateway{client: &mockChapaAPI{}}
+		_, err := gw.Initialize(canceledCtx, params)
+		if err == nil {
+			t.Fatal("expected error on canceled context, got nil")
+		}
+	})
 }
 
 func TestChapaGateway_Verify(t *testing.T) {
@@ -141,6 +165,30 @@ func TestChapaGateway_Verify(t *testing.T) {
 		}
 		if res.Message != "Payment successful" {
 			t.Errorf("expected message 'Payment successful', got %s", res.Message)
+		}
+	})
+
+	t.Run("nil response", func(t *testing.T) {
+		mockAPI := &mockChapaAPI{
+			verifyResponse: nil,
+			verifyErr:       nil,
+		}
+		gw := &ChapaGateway{client: mockAPI}
+
+		_, err := gw.Verify(ctx, "tx-12345")
+		if err == nil {
+			t.Fatal("expected error on nil response, got nil")
+		}
+	})
+
+	t.Run("context cancelled", func(t *testing.T) {
+		canceledCtx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		gw := &ChapaGateway{client: &mockChapaAPI{}}
+		_, err := gw.Verify(canceledCtx, "tx-12345")
+		if err == nil {
+			t.Fatal("expected error on canceled context, got nil")
 		}
 	})
 

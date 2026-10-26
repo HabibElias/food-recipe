@@ -27,6 +27,10 @@ func NewChapaGateway(cfg config.ChapaConfig) *ChapaGateway {
 var _ ports.PaymentGateway = (*ChapaGateway)(nil)
 
 func (g *ChapaGateway) Initialize(ctx context.Context, params ports.PaymentInitParams) (*ports.PaymentInitResult, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	req := &chapa.PaymentRequest{
 		Amount:         decimal.NewFromFloat(params.Amount),
 		Currency:       params.Currency,
@@ -43,6 +47,9 @@ func (g *ChapaGateway) Initialize(ctx context.Context, params ports.PaymentInitP
 	if err != nil {
 		return nil, fmt.Errorf("chapa request error: %w", err)
 	}
+	if res == nil {
+		return nil, fmt.Errorf("empty response from chapa")
+	}
 
 	if res.Status != "success" {
 		return nil, fmt.Errorf("chapa payment initialization failed: %s", res.Message)
@@ -56,9 +63,16 @@ func (g *ChapaGateway) Initialize(ctx context.Context, params ports.PaymentInitP
 }
 
 func (g *ChapaGateway) Verify(ctx context.Context, txRef string) (*ports.PaymentVerifyResult, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	res, err := g.client.Verify(txRef)
 	if err != nil {
 		return nil, fmt.Errorf("chapa verify error: %w", err)
+	}
+	if res == nil {
+		return nil, fmt.Errorf("empty response from chapa")
 	}
 
 	return &ports.PaymentVerifyResult{

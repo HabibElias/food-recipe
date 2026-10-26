@@ -11,16 +11,21 @@ func GenerateHasuraJWT(userID, email, secret string) (string, error) {
 	if secret == "" {
 		return "", fmt.Errorf("jwt secret is empty")
 	}
+	if userID == "" {
+		return "", fmt.Errorf("user id cannot be empty")
+	}
 
+	now := time.Now()
 	claims := jwt.MapClaims{
 		"sub":   userID,
 		"email": email,
+		"iat":   now.Unix(),
+		"exp":   now.Add(24 * time.Hour).Unix(),
 		"https://hasura.io/jwt/claims": map[string]interface{}{
-			"x-hasura-allowed-roles": []string{"user", "anon", "admin"},
+			"x-hasura-allowed-roles": []string{"user", "anon"},
 			"x-hasura-default-role":  "user",
 			"x-hasura-user-id":       userID,
 		},
-		"exp": time.Now().Add(24 * time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
