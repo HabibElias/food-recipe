@@ -26,7 +26,12 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return response.BadRequest(c, "invalid payload")
 	}
 
-	res, err := h.authService.Login(c.Context(), payload.Input.Input)
+	req := payload.Input.Input
+	if err := req.Validate(); err != nil {
+		return response.HandleDomainError(c, err)
+	}
+
+	res, err := h.authService.Login(c.Context(), req)
 	if err != nil {
 		return response.HandleDomainError(c, err)
 	}
@@ -41,7 +46,12 @@ func (h *AuthHandler) Signup(c *fiber.Ctx) error {
 		return response.BadRequest(c, "invalid payload")
 	}
 
-	res, err := h.authService.Signup(c.Context(), payload.Input.Input)
+	req := payload.Input.Input
+	if err := req.Validate(); err != nil {
+		return response.HandleDomainError(c, err)
+	}
+
+	res, err := h.authService.Signup(c.Context(), req)
 	if err != nil {
 		return response.HandleDomainError(c, err)
 	}
@@ -67,14 +77,16 @@ func (h *AuthHandler) Me(c *fiber.Ctx) error {
 		}
 	}
 
-	if token == "" {
-		if parseErr != nil {
-			return response.BadRequest(c, "invalid payload")
-		}
-		return response.BadRequest(c, "token is required")
+	if token == "" && parseErr != nil {
+		return response.BadRequest(c, "invalid payload")
 	}
 
-	res, err := h.authService.Me(c.Context(), token)
+	req := dto.MeInputDTO{Token: token}
+	if err := req.Validate(); err != nil {
+		return response.HandleDomainError(c, err)
+	}
+
+	res, err := h.authService.Me(c.Context(), req.Token)
 	if err != nil {
 		return response.HandleDomainError(c, err)
 	}

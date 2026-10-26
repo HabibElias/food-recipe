@@ -6,12 +6,21 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	domainerrors "go/food-recipe/internal/domain/errors"
+	"go/food-recipe/internal/infrastructure/validator"
 )
 
 // HandleDomainError maps domain errors to appropriate HTTP responses.
 func HandleDomainError(c *fiber.Ctx, err error) error {
 	if err == nil {
 		return OK(c, nil)
+	}
+
+	var valErr *validator.ValidationError
+	if errors.As(err, &valErr) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": valErr.Error(),
+			"errors":  valErr.Errors,
+		})
 	}
 
 	if errors.Is(err, domainerrors.ErrUserNotFound) || errors.Is(err, domainerrors.ErrTransactionNotFound) {

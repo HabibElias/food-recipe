@@ -26,6 +26,11 @@ func (h *PaymentHandler) InitializePayment(c *fiber.Ctx) error {
 		return response.BadRequest(c, "invalid request payload")
 	}
 
+	input := payload.ToInputDTO()
+	if err := input.Validate(); err != nil {
+		return response.HandleDomainError(c, err)
+	}
+
 	sessionUserID := payload.GetSessionUserID()
 	if sessionUserID == "" && payload.SessionVariables != nil {
 		for _, key := range []string{"x-hasura-user-id", "hasura_user_id", "HasuraUserID", "user_id"} {
@@ -43,8 +48,6 @@ func (h *PaymentHandler) InitializePayment(c *fiber.Ctx) error {
 		}
 	}
 
-	input := payload.ToInputDTO()
-
 	res, err := h.paymentService.InitializePayment(c.Context(), input, sessionUserID)
 	if err != nil {
 		return response.HandleDomainError(c, err)
@@ -59,11 +62,13 @@ func (h *PaymentHandler) VerifyPayment(c *fiber.Ctx) error {
 	if txRef == "" {
 		txRef = strings.TrimSpace(c.Query("tx_ref"))
 	}
-	if txRef == "" {
-		return response.BadRequest(c, "transaction reference is required")
+
+	input := dto.VerifyPaymentInputDTO{TrxRef: txRef}
+	if err := input.Validate(); err != nil {
+		return response.HandleDomainError(c, err)
 	}
 
-	res, err := h.paymentService.VerifyPayment(c.Context(), txRef)
+	res, err := h.paymentService.VerifyPayment(c.Context(), input.TrxRef)
 	if err != nil {
 		return response.HandleDomainError(c, err)
 	}

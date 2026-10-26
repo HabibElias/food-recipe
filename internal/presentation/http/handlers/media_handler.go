@@ -24,7 +24,12 @@ func (h *MediaHandler) UploadRecipeImages(c *fiber.Ctx) error {
 		return response.BadRequest(c, "invalid payload")
 	}
 
-	res, err := h.mediaService.UploadRecipeImages(c.Context(), payload.Input.Input)
+	input := payload.Input.Input
+	if err := input.Validate(); err != nil {
+		return response.HandleDomainError(c, err)
+	}
+
+	res, err := h.mediaService.UploadRecipeImages(c.Context(), input)
 	if err != nil {
 		return response.HandleDomainError(c, err)
 	}
@@ -56,7 +61,16 @@ func (h *MediaHandler) UploadUserImage(c *fiber.Ctx) error {
 		}
 	}
 
-	res, err := h.mediaService.UploadUserImage(c.Context(), payload.Input.Input, sessionUserID)
+	input := payload.Input.Input
+	if input.UserID == "" {
+		input.UserID = sessionUserID
+	}
+
+	if err := input.Validate(); err != nil {
+		return response.HandleDomainError(c, err)
+	}
+
+	res, err := h.mediaService.UploadUserImage(c.Context(), input, sessionUserID)
 	if err != nil {
 		return response.HandleDomainError(c, err)
 	}

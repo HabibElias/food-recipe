@@ -118,25 +118,25 @@ graph TD
 - Consumes: `*validator.ValidationError`, `dto.Validatable`
 - Produces: HTTP 400 Bad Request with `{"message": "...", "errors": [...]}`
 
-- [ ] **Step 1: Write failing test in `errors_test.go` for `ValidationError` mapping**
+- [x] **Step 1: Write failing test in `errors_test.go` for `ValidationError` mapping**
   Assert that passing `&validator.ValidationError` to `HandleDomainError` produces HTTP 400 with both `"message"` and `"errors"`.
 
-- [ ] **Step 2: Run test to confirm it fails**
+- [x] **Step 2: Run test to confirm it fails**
   Run `go test ./internal/presentation/response`.
 
-- [ ] **Step 3: Update `HandleDomainError` in `internal/presentation/response/errors.go`**
+- [x] **Step 3: Update `HandleDomainError` in `internal/presentation/response/errors.go`**
   Add type assertion for `*validator.ValidationError` returning status 400 with formatted message and errors array.
 
-- [ ] **Step 4: Integrate `.Validate()` calls into all handlers**
+- [x] **Step 4: Integrate `.Validate()` calls into all handlers**
   - `auth_handler.go`: `Login`, `Signup`, `Me`
   - `payment_handler.go`: `InitializePayment`, `VerifyPayment`
   - `media_handler.go`: `UploadRecipeImages`, `UploadUserImage`
   - `notification_handler.go`: `LikeNotification`
 
-- [ ] **Step 5: Run tests to verify handler and response behavior**
+- [x] **Step 5: Run tests to verify handler and response behavior**
   Run `go test -v ./internal/presentation/response ./internal/presentation/http/handlers`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
   Commit Task 3 changes.
 
 ---

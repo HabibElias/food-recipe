@@ -30,6 +30,10 @@ func (h *NotificationHandler) LikeNotification(c *fiber.Ctx) error {
 		return response.OK(c, &dto.LikeNotificationOutputDTO{OK: true, Skipped: true})
 	}
 
+	if err := payload.Validate(); err != nil {
+		return response.HandleDomainError(c, err)
+	}
+
 	res, err := h.notificationService.HandleLikeNotification(c.Context(), payload)
 	if err != nil {
 		return response.HandleDomainError(c, err)
