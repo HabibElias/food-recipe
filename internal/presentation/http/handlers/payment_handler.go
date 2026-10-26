@@ -31,22 +31,7 @@ func (h *PaymentHandler) InitializePayment(c *fiber.Ctx) error {
 		return response.HandleDomainError(c, err)
 	}
 
-	sessionUserID := payload.GetSessionUserID()
-	if sessionUserID == "" && payload.SessionVariables != nil {
-		for _, key := range []string{"x-hasura-user-id", "hasura_user_id", "HasuraUserID", "user_id"} {
-			if v, ok := payload.SessionVariables[key]; ok {
-				if s, ok := v.(string); ok && s != "" {
-					sessionUserID = s
-					break
-				}
-			}
-		}
-	}
-	if sessionUserID == "" {
-		if v, ok := c.Locals("user_id").(string); ok {
-			sessionUserID = v
-		}
-	}
+	sessionUserID := resolveSessionUserID(payload.SessionVariables, c)
 
 	res, err := h.paymentService.InitializePayment(c.Context(), input, sessionUserID)
 	if err != nil {

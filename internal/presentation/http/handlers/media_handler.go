@@ -44,22 +44,7 @@ func (h *MediaHandler) UploadUserImage(c *fiber.Ctx) error {
 		return response.BadRequest(c, "invalid payload")
 	}
 
-	sessionUserID := payload.GetSessionUserID()
-	if sessionUserID == "" && payload.SessionVariables != nil {
-		for _, key := range []string{"x-hasura-user-id", "hasura_user_id", "HasuraUserID", "user_id"} {
-			if v, ok := payload.SessionVariables[key]; ok {
-				if s, ok := v.(string); ok && s != "" {
-					sessionUserID = s
-					break
-				}
-			}
-		}
-	}
-	if sessionUserID == "" {
-		if v, ok := c.Locals("user_id").(string); ok {
-			sessionUserID = v
-		}
-	}
+	sessionUserID := resolveSessionUserID(payload.SessionVariables, c)
 
 	input := payload.Input.Input
 	if input.UserID == "" {

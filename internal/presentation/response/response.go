@@ -59,6 +59,11 @@ func Conflict(c *fiber.Ctx, msg string) error {
 	return ErrorMessage(c, fiber.StatusConflict, msg)
 }
 
+// ServiceUnavailable sends 503 Service Unavailable.
+func ServiceUnavailable(c *fiber.Ctx, msg string) error {
+	return ErrorMessage(c, fiber.StatusServiceUnavailable, msg)
+}
+
 // Internal sends 500 Internal Server Error.
 func Internal(c *fiber.Ctx, msg string) error {
 	return ErrorMessage(c, fiber.StatusInternalServerError, msg)

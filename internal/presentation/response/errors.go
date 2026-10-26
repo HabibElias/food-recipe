@@ -36,9 +36,9 @@ func HandleDomainError(c *fiber.Ctx, err error) error {
 		return BadRequest(c, err.Error())
 	}
 	if errors.Is(err, domainerrors.ErrServiceUnavailable) {
-		return JSON(c, fiber.StatusServiceUnavailable, ErrorResponse{Message: err.Error()})
+		return ServiceUnavailable(c, err.Error())
 	}
 
-	log.Printf("[ERROR] unhandled error: %v", err)
+	log.Printf("[ERROR] %s %s - unhandled error: %v", c.Method(), c.Path(), err)
 	return Internal(c, "internal server error")
 }
