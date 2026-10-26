@@ -3,6 +3,7 @@ package hasura
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	graphql "github.com/hasura/go-graphql-client"
@@ -18,7 +19,7 @@ func NewClient(cfg config.HasuraConfig) *Client {
 		return &Client{GQL: nil}
 	}
 
-	c := graphql.NewClient(cfg.URL, &http.Client{}).
+	c := graphql.NewClient(cfg.URL, &http.Client{Timeout: 30 * time.Second}).
 		WithRequestModifier(func(req *http.Request) {
 			if cfg.AdminSecret != "" {
 				req.Header.Set("x-hasura-admin-secret", cfg.AdminSecret)
@@ -51,6 +52,12 @@ func (u *GQLUUID) UnmarshalText(text []byte) error {
 }
 
 func (u *GQLUUID) UnmarshalJSON(data []byte) error {
+	str := string(data)
+	if str == "null" || str == `""` || str == "" {
+		*u = GQLUUID(uuid.Nil)
+		return nil
+	}
+
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err

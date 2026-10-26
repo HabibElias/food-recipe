@@ -2,6 +2,7 @@ package hasura
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"go/food-recipe/internal/domain/entities"
@@ -48,9 +49,11 @@ func (r *paymentRepository) CreateTransaction(ctx context.Context, tx *entities.
 		return err
 	}
 
-	if len(mutation.InsertTransaction.Returning) > 0 {
-		tx.ID = mutation.InsertTransaction.Returning[0].ID
+	if len(mutation.InsertTransaction.Returning) == 0 {
+		return fmt.Errorf("failed to create transaction")
 	}
+
+	tx.ID = mutation.InsertTransaction.Returning[0].ID
 
 	return nil
 }
@@ -126,9 +129,11 @@ func (r *paymentRepository) CreatePayment(ctx context.Context, payment *entities
 		return err
 	}
 
-	if len(mutation.InsertPayment.Returning) > 0 {
-		payment.ID = mutation.InsertPayment.Returning[0].ID
+	if len(mutation.InsertPayment.Returning) == 0 {
+		return fmt.Errorf("failed to create payment")
 	}
+
+	payment.ID = mutation.InsertPayment.Returning[0].ID
 
 	return nil
 }

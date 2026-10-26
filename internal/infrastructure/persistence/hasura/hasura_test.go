@@ -53,6 +53,23 @@ func TestGQLUUID(t *testing.T) {
 		t.Fatalf("expected unmarshaled UUID %s, got %s", id, uuid.UUID(unmarshaled))
 	}
 
+	// Test UnmarshalJSON with "null" and empty string
+	var nullUnmarshaled hasura.GQLUUID
+	if err := json.Unmarshal([]byte("null"), &nullUnmarshaled); err != nil {
+		t.Fatalf("failed to unmarshal null: %v", err)
+	}
+	if uuid.UUID(nullUnmarshaled) != uuid.Nil {
+		t.Fatalf("expected uuid.Nil for null, got %s", uuid.UUID(nullUnmarshaled))
+	}
+
+	var emptyUnmarshaled hasura.GQLUUID
+	if err := json.Unmarshal([]byte(`""`), &emptyUnmarshaled); err != nil {
+		t.Fatalf("failed to unmarshal empty string: %v", err)
+	}
+	if uuid.UUID(emptyUnmarshaled) != uuid.Nil {
+		t.Fatalf("expected uuid.Nil for empty string, got %s", uuid.UUID(emptyUnmarshaled))
+	}
+
 	// Test MarshalText and UnmarshalText
 	text, err := gqlUUID.MarshalText()
 	if err != nil {
@@ -411,6 +428,16 @@ func TestPaymentRepository_MockServer(t *testing.T) {
 
 		switch {
 		case strings.Contains(req.Query, "insert_transaction"):
+			if ref, ok := req.Variables["trx_ref"].(string); ok && ref == "TX-EMPTY" {
+				w.Write([]byte(`{
+					"data": {
+						"insert_transaction": {
+							"returning": []
+						}
+					}
+				}`))
+				return
+			}
 			w.Write([]byte(`{
 				"data": {
 					"insert_transaction": {
@@ -439,6 +466,16 @@ func TestPaymentRepository_MockServer(t *testing.T) {
 			}
 
 		case strings.Contains(req.Query, "insert_payment"):
+			if ref, ok := req.Variables["tx_ref"].(string); ok && ref == "TX-EMPTY" {
+				w.Write([]byte(`{
+					"data": {
+						"insert_payment": {
+							"returning": []
+						}
+					}
+				}`))
+				return
+			}
 			w.Write([]byte(`{
 				"data": {
 					"insert_payment": {
@@ -474,6 +511,24 @@ func TestPaymentRepository_MockServer(t *testing.T) {
 	t.Run("CreateTransaction nil input", func(t *testing.T) {
 		if err := repo.CreateTransaction(ctx, nil); !errors.Is(err, domainerrors.ErrInvalidInput) {
 			t.Fatalf("expected ErrInvalidInput, got %v", err)
+		}
+	})
+
+	t.Run("CreateTransaction empty returning returns error", func(t *testing.T) {
+		tx := &entities.Transaction{
+			UserID:      testUserID,
+			RecipeID:    42,
+			TrxRef:      "TX-EMPTY",
+			Amount:      250.50,
+			Currency:    "ETB",
+			CheckoutURL: "https://chapa.co/pay/123",
+		}
+		err := repo.CreateTransaction(ctx, tx)
+		if err == nil {
+			t.Fatalf("expected error on empty returning, got nil")
+		}
+		if !strings.Contains(err.Error(), "failed to create transaction") {
+			t.Fatalf("expected 'failed to create transaction' error, got %v", err)
 		}
 	})
 
@@ -521,6 +576,25 @@ func TestPaymentRepository_MockServer(t *testing.T) {
 	t.Run("CreatePayment nil input", func(t *testing.T) {
 		if err := repo.CreatePayment(ctx, nil); !errors.Is(err, domainerrors.ErrInvalidInput) {
 			t.Fatalf("expected ErrInvalidInput, got %v", err)
+		}
+	})
+
+	t.Run("CreatePayment empty returning returns error", func(t *testing.T) {
+		payment := &entities.Payment{
+			UserID:      testUserID,
+			RecipeID:    42,
+			TxRef:       "TX-EMPTY",
+			Amount:      250.50,
+			CheckoutURL: "https://chapa.co/pay/123",
+			Currency:    "ETB",
+			Status:      "success",
+		}
+		err := repo.CreatePayment(ctx, payment)
+		if err == nil {
+			t.Fatalf("expected error on empty returning, got nil")
+		}
+		if !strings.Contains(err.Error(), "failed to create payment") {
+			t.Fatalf("expected 'failed to create payment' error, got %v", err)
 		}
 	})
 }
