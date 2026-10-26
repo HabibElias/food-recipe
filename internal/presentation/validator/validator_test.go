@@ -5,8 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-playground/validator/v10"
 	domainerrors "go/food-recipe/internal/domain/errors"
-	"go/food-recipe/internal/presentation/validator"
+	pvalidator "go/food-recipe/internal/presentation/validator"
 )
 
 type TestUser struct {
@@ -26,7 +27,7 @@ func TestValidateStruct_Valid(t *testing.T) {
 		Age:       25,
 	}
 
-	err := validator.ValidateStruct(validUser)
+	err := pvalidator.ValidateStruct(validUser)
 	if err != nil {
 		t.Fatalf("expected nil error for valid struct, got: %v", err)
 	}
@@ -41,12 +42,12 @@ func TestValidateStruct_JSONTagExtraction(t *testing.T) {
 		Age:      25,
 	}
 
-	err := validator.ValidateStruct(user)
+	err := pvalidator.ValidateStruct(user)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
 
-	var valErr *validator.ValidationError
+	var valErr *pvalidator.ValidationError
 	if !errors.As(err, &valErr) {
 		t.Fatalf("expected error to be *validator.ValidationError, got %T", err)
 	}
@@ -60,6 +61,44 @@ func TestValidateStruct_JSONTagExtraction(t *testing.T) {
 	}
 }
 
+func TestValidateStruct_PreserveJSONTagCase(t *testing.T) {
+	type CaseTestStruct struct {
+		CamelCaseField string `json:"camelCaseField" validate:"required"`
+		FallbackField  string `validate:"required"`
+	}
+
+	data := CaseTestStruct{}
+	err := pvalidator.ValidateStruct(data)
+	if err == nil {
+		t.Fatalf("expected validation error, got nil")
+	}
+
+	var valErr *pvalidator.ValidationError
+	if !errors.As(err, &valErr) {
+		t.Fatalf("expected *validator.ValidationError, got %T", err)
+	}
+
+	if len(valErr.Errors) != 2 {
+		t.Fatalf("expected 2 errors, got %d", len(valErr.Errors))
+	}
+
+	// First field should preserve "camelCaseField"
+	if valErr.Errors[0].Field != "camelCaseField" {
+		t.Errorf("expected field 'camelCaseField', got '%s'", valErr.Errors[0].Field)
+	}
+	if valErr.Errors[0].Error != "camelCaseField is required" {
+		t.Errorf("expected error 'camelCaseField is required', got '%s'", valErr.Errors[0].Error)
+	}
+
+	// Second field has no json tag -> fallback lowercased "fallbackfield"
+	if valErr.Errors[1].Field != "fallbackfield" {
+		t.Errorf("expected field 'fallbackfield', got '%s'", valErr.Errors[1].Field)
+	}
+	if valErr.Errors[1].Error != "fallbackfield is required" {
+		t.Errorf("expected error 'fallbackfield is required', got '%s'", valErr.Errors[1].Error)
+	}
+}
+
 func TestValidateStruct_FallbackFieldNameToLowerCase(t *testing.T) {
 	user := TestUser{
 		FirstName: "John",
@@ -69,12 +108,12 @@ func TestValidateStruct_FallbackFieldNameToLowerCase(t *testing.T) {
 		Age:   25,
 	}
 
-	err := validator.ValidateStruct(user)
+	err := pvalidator.ValidateStruct(user)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
 
-	var valErr *validator.ValidationError
+	var valErr *pvalidator.ValidationError
 	if !errors.As(err, &valErr) {
 		t.Fatalf("expected *validator.ValidationError, got %T", err)
 	}
@@ -96,12 +135,12 @@ func TestValidateStruct_Required(t *testing.T) {
 		Age:      25,
 	}
 
-	err := validator.ValidateStruct(user)
+	err := pvalidator.ValidateStruct(user)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
 
-	var valErr *validator.ValidationError
+	var valErr *pvalidator.ValidationError
 	if !errors.As(err, &valErr) {
 		t.Fatalf("expected *validator.ValidationError, got %T", err)
 	}
@@ -121,12 +160,12 @@ func TestValidateStruct_Email(t *testing.T) {
 		Age:       25,
 	}
 
-	err := validator.ValidateStruct(user)
+	err := pvalidator.ValidateStruct(user)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
 
-	var valErr *validator.ValidationError
+	var valErr *pvalidator.ValidationError
 	if !errors.As(err, &valErr) {
 		t.Fatalf("expected *validator.ValidationError, got %T", err)
 	}
@@ -137,8 +176,8 @@ func TestValidateStruct_Email(t *testing.T) {
 	}
 }
 
-func TestValidateStruct_Min(t *testing.T) {
-	user := TestUser{
+func TestValidateStruct_MinMax_String(t *testing.T) {
+	userMin := TestUser{
 		FirstName: "John",
 		LastName:  "Doe",
 		Email:     "john.doe@example.com",
@@ -146,24 +185,22 @@ func TestValidateStruct_Min(t *testing.T) {
 		Age:       25,
 	}
 
-	err := validator.ValidateStruct(user)
+	err := pvalidator.ValidateStruct(userMin)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
 
-	var valErr *validator.ValidationError
+	var valErr *pvalidator.ValidationError
 	if !errors.As(err, &valErr) {
 		t.Fatalf("expected *validator.ValidationError, got %T", err)
 	}
 
-	expected := "bio must be at least 5 characters"
-	if valErr.Errors[0].Error != expected {
-		t.Errorf("expected error message %q, got %q", expected, valErr.Errors[0].Error)
+	expectedMin := "bio must be at least 5 characters"
+	if valErr.Errors[0].Error != expectedMin {
+		t.Errorf("expected error message %q, got %q", expectedMin, valErr.Errors[0].Error)
 	}
-}
 
-func TestValidateStruct_Max(t *testing.T) {
-	user := TestUser{
+	userMax := TestUser{
 		FirstName: "John",
 		LastName:  "Doe",
 		Email:     "john.doe@example.com",
@@ -171,19 +208,92 @@ func TestValidateStruct_Max(t *testing.T) {
 		Age:       25,
 	}
 
-	err := validator.ValidateStruct(user)
+	err = pvalidator.ValidateStruct(userMax)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
 
-	var valErr *validator.ValidationError
 	if !errors.As(err, &valErr) {
 		t.Fatalf("expected *validator.ValidationError, got %T", err)
 	}
 
-	expected := "bio must be at most 20 characters"
+	expectedMax := "bio must be at most 20 characters"
+	if valErr.Errors[0].Error != expectedMax {
+		t.Errorf("expected error message %q, got %q", expectedMax, valErr.Errors[0].Error)
+	}
+}
+
+func TestValidateStruct_MinMax_Slice(t *testing.T) {
+	type SliceStruct struct {
+		Items []string `json:"items" validate:"min=2,max=3"`
+	}
+
+	tooFew := SliceStruct{Items: []string{"one"}}
+	err := pvalidator.ValidateStruct(tooFew)
+	if err == nil {
+		t.Fatalf("expected validation error, got nil")
+	}
+
+	var valErr *pvalidator.ValidationError
+	if !errors.As(err, &valErr) {
+		t.Fatalf("expected *validator.ValidationError, got %T", err)
+	}
+
+	expected := "items must contain at least 2 items"
 	if valErr.Errors[0].Error != expected {
-		t.Errorf("expected error message %q, got %q", expected, valErr.Errors[0].Error)
+		t.Errorf("expected %q, got %q", expected, valErr.Errors[0].Error)
+	}
+
+	tooMany := SliceStruct{Items: []string{"one", "two", "three", "four"}}
+	err = pvalidator.ValidateStruct(tooMany)
+	if err == nil {
+		t.Fatalf("expected validation error, got nil")
+	}
+
+	if !errors.As(err, &valErr) {
+		t.Fatalf("expected *validator.ValidationError, got %T", err)
+	}
+
+	expected = "items must contain at most 3 items"
+	if valErr.Errors[0].Error != expected {
+		t.Errorf("expected %q, got %q", expected, valErr.Errors[0].Error)
+	}
+}
+
+func TestValidateStruct_MinMax_Number(t *testing.T) {
+	type NumberStruct struct {
+		Count int `json:"count" validate:"min=10,max=50"`
+	}
+
+	tooLow := NumberStruct{Count: 5}
+	err := pvalidator.ValidateStruct(tooLow)
+	if err == nil {
+		t.Fatalf("expected validation error, got nil")
+	}
+
+	var valErr *pvalidator.ValidationError
+	if !errors.As(err, &valErr) {
+		t.Fatalf("expected *validator.ValidationError, got %T", err)
+	}
+
+	expected := "count must be at least 10"
+	if valErr.Errors[0].Error != expected {
+		t.Errorf("expected %q, got %q", expected, valErr.Errors[0].Error)
+	}
+
+	tooHigh := NumberStruct{Count: 60}
+	err = pvalidator.ValidateStruct(tooHigh)
+	if err == nil {
+		t.Fatalf("expected validation error, got nil")
+	}
+
+	if !errors.As(err, &valErr) {
+		t.Fatalf("expected *validator.ValidationError, got %T", err)
+	}
+
+	expected = "count must be at most 50"
+	if valErr.Errors[0].Error != expected {
+		t.Errorf("expected %q, got %q", expected, valErr.Errors[0].Error)
 	}
 }
 
@@ -196,12 +306,12 @@ func TestValidateStruct_Gt(t *testing.T) {
 		Age:       18, // gt=18, so 18 fails
 	}
 
-	err := validator.ValidateStruct(user)
+	err := pvalidator.ValidateStruct(user)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
 
-	var valErr *validator.ValidationError
+	var valErr *pvalidator.ValidationError
 	if !errors.As(err, &valErr) {
 		t.Fatalf("expected *validator.ValidationError, got %T", err)
 	}
@@ -217,7 +327,7 @@ func TestValidateStruct_Unwrap(t *testing.T) {
 		FirstName: "",
 	}
 
-	err := validator.ValidateStruct(user)
+	err := pvalidator.ValidateStruct(user)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
@@ -230,11 +340,16 @@ func TestValidateStruct_Unwrap(t *testing.T) {
 	if unwrapped != domainerrors.ErrInvalidInput {
 		t.Errorf("expected unwrapped error to be ErrInvalidInput, got: %v", unwrapped)
 	}
+
+	var nilValErr *pvalidator.ValidationError
+	if nilValErr.Unwrap() != nil {
+		t.Errorf("expected nil unwrapped from nil *ValidationError, got: %v", nilValErr.Unwrap())
+	}
 }
 
 func TestValidationError_Error_Format(t *testing.T) {
-	valErr := &validator.ValidationError{
-		Errors: []validator.FieldError{
+	valErr := &pvalidator.ValidationError{
+		Errors: []pvalidator.FieldError{
 			{Field: "email", Error: "email is required"},
 			{Field: "password", Error: "password must be at least 6 characters"},
 		},
@@ -245,12 +360,12 @@ func TestValidationError_Error_Format(t *testing.T) {
 		t.Errorf("expected %q, got %q", expected, valErr.Error())
 	}
 
-	emptyErr := &validator.ValidationError{}
+	emptyErr := &pvalidator.ValidationError{}
 	if emptyErr.Error() != "validation error" {
 		t.Errorf("expected 'validation error', got %q", emptyErr.Error())
 	}
 
-	var nilErr *validator.ValidationError
+	var nilErr *pvalidator.ValidationError
 	if nilErr.Error() != "validation error" {
 		t.Errorf("expected 'validation error', got %q", nilErr.Error())
 	}
@@ -265,12 +380,12 @@ func TestValidateStruct_MultipleErrors(t *testing.T) {
 		Age:       10,
 	}
 
-	err := validator.ValidateStruct(user)
+	err := pvalidator.ValidateStruct(user)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
 
-	var valErr *validator.ValidationError
+	var valErr *pvalidator.ValidationError
 	if !errors.As(err, &valErr) {
 		t.Fatalf("expected *validator.ValidationError, got %T", err)
 	}
@@ -294,12 +409,12 @@ func TestValidateStruct_UUID(t *testing.T) {
 	}
 
 	invalid := UUIDStruct{ID: "not-a-uuid"}
-	err := validator.ValidateStruct(invalid)
+	err := pvalidator.ValidateStruct(invalid)
 	if err == nil {
 		t.Fatalf("expected validation error, got nil")
 	}
 
-	var valErr *validator.ValidationError
+	var valErr *pvalidator.ValidationError
 	if !errors.As(err, &valErr) {
 		t.Fatalf("expected *validator.ValidationError, got %T", err)
 	}
@@ -311,7 +426,7 @@ func TestValidateStruct_UUID(t *testing.T) {
 }
 
 func TestValidateStruct_NilAndNonStruct(t *testing.T) {
-	errNil := validator.ValidateStruct(nil)
+	errNil := pvalidator.ValidateStruct(nil)
 	if errNil == nil {
 		t.Fatalf("expected validation error for nil, got nil")
 	}
@@ -319,7 +434,22 @@ func TestValidateStruct_NilAndNonStruct(t *testing.T) {
 		t.Errorf("expected errors.Is(errNil, domainerrors.ErrInvalidInput) to be true")
 	}
 
-	errNonStruct := validator.ValidateStruct("just a string")
+	var typedNilPtr *TestUser = nil
+	errTypedNil := pvalidator.ValidateStruct(typedNilPtr)
+	if errTypedNil == nil {
+		t.Fatalf("expected validation error for typed nil pointer, got nil")
+	}
+	if !errors.Is(errTypedNil, domainerrors.ErrInvalidInput) {
+		t.Errorf("expected errors.Is(errTypedNil, domainerrors.ErrInvalidInput) to be true")
+	}
+	var valErr *pvalidator.ValidationError
+	if errors.As(errTypedNil, &valErr) {
+		if len(valErr.Errors) != 1 || valErr.Errors[0].Error != "input cannot be nil" {
+			t.Errorf("unexpected error payload: %+v", valErr.Errors)
+		}
+	}
+
+	errNonStruct := pvalidator.ValidateStruct("just a string")
 	if errNonStruct == nil {
 		t.Fatalf("expected validation error for non-struct, got nil")
 	}
@@ -328,3 +458,27 @@ func TestValidateStruct_NilAndNonStruct(t *testing.T) {
 	}
 }
 
+func TestRegisterValidation(t *testing.T) {
+	err := pvalidator.RegisterValidation("custom_starts_with_a", func(fl validator.FieldLevel) bool {
+		return strings.HasPrefix(fl.Field().String(), "a")
+	})
+	if err != nil {
+		t.Fatalf("failed to register custom validation: %v", err)
+	}
+
+	type CustomStruct struct {
+		Code string `json:"code" validate:"custom_starts_with_a"`
+	}
+
+	invalid := CustomStruct{Code: "bcd"}
+	errInvalid := pvalidator.ValidateStruct(invalid)
+	if errInvalid == nil {
+		t.Fatalf("expected validation error for custom rule, got nil")
+	}
+
+	valid := CustomStruct{Code: "abc"}
+	errValid := pvalidator.ValidateStruct(valid)
+	if errValid != nil {
+		t.Fatalf("expected valid struct to pass, got: %v", errValid)
+	}
+}

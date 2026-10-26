@@ -20,10 +20,15 @@ func init() {
 			name = name[:idx]
 		}
 		if name == "" || name == "-" {
-			return fld.Name
+			return strings.ToLower(fld.Name)
 		}
 		return name
 	})
+}
+
+// RegisterValidation adds a custom validation function to the validator instance.
+func RegisterValidation(tag string, fn validator.Func) error {
+	return validate.RegisterValidation(tag, fn)
 }
 
 // FieldError represents a single field validation failure.
@@ -51,12 +56,24 @@ func (v *ValidationError) Error() string {
 
 // Unwrap allows ValidationError to match domainerrors.ErrInvalidInput via errors.Is.
 func (v *ValidationError) Unwrap() error {
+	if v == nil {
+		return nil
+	}
 	return domainerrors.ErrInvalidInput
 }
 
 // ValidateStruct validates a struct using validator/v10 tags and returns a ValidationError on failure.
 func ValidateStruct(s interface{}) error {
 	if s == nil {
+		return &ValidationError{
+			Errors: []FieldError{
+				{Field: "", Error: "input cannot be nil"},
+			},
+		}
+	}
+
+	val := reflect.ValueOf(s)
+	if val.Kind() == reflect.Ptr && val.IsNil() {
 		return &ValidationError{
 			Errors: []FieldError{
 				{Field: "", Error: "input cannot be nil"},
@@ -80,9 +97,8 @@ func ValidateStruct(s interface{}) error {
 
 	errors := make([]FieldError, 0, len(validationErrors))
 	for _, fieldErr := range validationErrors {
-		field := strings.ToLower(fieldErr.Field())
 		errors = append(errors, FieldError{
-			Field: field,
+			Field: fieldErr.Field(),
 			Error: getErrorMessage(fieldErr),
 		})
 	}
@@ -92,16 +108,30 @@ func ValidateStruct(s interface{}) error {
 
 // getErrorMessage maps validator.FieldError tags to human-friendly error messages.
 func getErrorMessage(err validator.FieldError) string {
-	field := strings.ToLower(err.Field())
+	field := err.Field()
 	switch err.Tag() {
 	case "required":
 		return fmt.Sprintf("%s is required", field)
 	case "email":
 		return fmt.Sprintf("%s must be a valid email address", field)
 	case "min":
-		return fmt.Sprintf("%s must be at least %s characters", field, err.Param())
+		switch err.Kind() {
+		case reflect.String:
+			return fmt.Sprintf("%s must be at least %s characters", field, err.Param())
+		case reflect.Slice, reflect.Array, reflect.Map:
+			return fmt.Sprintf("%s must contain at least %s items", field, err.Param())
+		default:
+			return fmt.Sprintf("%s must be at least %s", field, err.Param())
+		}
 	case "max":
-		return fmt.Sprintf("%s must be at most %s characters", field, err.Param())
+		switch err.Kind() {
+		case reflect.String:
+			return fmt.Sprintf("%s must be at most %s characters", field, err.Param())
+		case reflect.Slice, reflect.Array, reflect.Map:
+			return fmt.Sprintf("%s must contain at most %s items", field, err.Param())
+		default:
+			return fmt.Sprintf("%s must be at most %s", field, err.Param())
+		}
 	case "gt":
 		return fmt.Sprintf("%s must be greater than %s", field, err.Param())
 	case "gte":
