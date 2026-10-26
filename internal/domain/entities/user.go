@@ -3,13 +3,13 @@ package entities
 import "github.com/google/uuid"
 
 type User struct {
-	ID        uuid.UUID
-	Email     string
-	Username  string
-	FirstName string
-	LastName  string
+	ID           uuid.UUID
+	Email        string
+	Username     string
+	FirstName    string
+	LastName     string
 	PasswordHash string
-	AvatarURL string
+	AvatarURL    string
 }
 
 func (u User) FullName() string {

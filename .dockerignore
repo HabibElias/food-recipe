@@ -1,0 +1,12 @@
+.git
+.gitignore
+.vscode
+.superpowers
+docs/
+tmp/
+bin/
+*.exe
+food-recipe
+vendor/
+.env
+*.md

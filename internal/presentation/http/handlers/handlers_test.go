@@ -27,9 +27,9 @@ import (
 // --- Mock Implementations ---
 
 type mockPaymentRepo struct {
-	createTxFn         func(ctx context.Context, tx *entities.Transaction) error
-	getTxByRefFn       func(ctx context.Context, txRef string) (*entities.Transaction, error)
-	createPaymentFn    func(ctx context.Context, payment *entities.Payment) error
+	createTxFn      func(ctx context.Context, tx *entities.Transaction) error
+	getTxByRefFn    func(ctx context.Context, txRef string) (*entities.Transaction, error)
+	createPaymentFn func(ctx context.Context, payment *entities.Payment) error
 }
 
 var _ repositories.PaymentRepository = (*mockPaymentRepo)(nil)
@@ -90,8 +90,8 @@ func (m *mockFileStorage) UploadBase64Image(ctx context.Context, base64Data, pub
 }
 
 type mockRecipeRepo struct {
-	getCreatorFn    func(ctx context.Context, likeID uuid.UUID) (uuid.UUID, string, error)
-	addRecipeImgFn  func(ctx context.Context, img *entities.RecipeImage) error
+	getCreatorFn   func(ctx context.Context, likeID uuid.UUID) (uuid.UUID, string, error)
+	addRecipeImgFn func(ctx context.Context, img *entities.RecipeImage) error
 }
 
 var _ repositories.RecipeRepository = (*mockRecipeRepo)(nil)
@@ -154,10 +154,10 @@ func TestPaymentHandler_InitializePayment(t *testing.T) {
 				"x-hasura-user-id": userID.String(),
 			},
 			Input: struct {
-				Amount   float64                            `json:"amount"`
-				RecipeID int                                `json:"recipe_id"`
-				Phone    string                             `json:"phone,omitempty"`
-				Input    *dto.InitializePaymentInputDTO     `json:"input,omitempty"`
+				Amount   float64                        `json:"amount"`
+				RecipeID int                            `json:"recipe_id"`
+				Phone    string                         `json:"phone,omitempty"`
+				Input    *dto.InitializePaymentInputDTO `json:"input,omitempty"`
 			}{
 				Amount:   150.0,
 				RecipeID: 42,

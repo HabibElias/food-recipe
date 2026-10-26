@@ -15,7 +15,7 @@ import (
 )
 
 type mockPaymentRepo struct {
-	createTxFn func(ctx context.Context, tx *entities.Transaction) error
+	createTxFn  func(ctx context.Context, tx *entities.Transaction) error
 	getTxFn     func(ctx context.Context, txRef string) (*entities.Transaction, error)
 	createPayFn func(ctx context.Context, payment *entities.Payment) error
 }

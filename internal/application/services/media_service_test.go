@@ -29,8 +29,8 @@ func (m *mockFileStorage) UploadBase64Image(ctx context.Context, base64Data, pub
 }
 
 type mockRecipeRepo struct {
-	getCreatorFn    func(ctx context.Context, likeID uuid.UUID) (uuid.UUID, string, error)
-	addRecipeImgFn  func(ctx context.Context, img *entities.RecipeImage) error
+	getCreatorFn   func(ctx context.Context, likeID uuid.UUID) (uuid.UUID, string, error)
+	addRecipeImgFn func(ctx context.Context, img *entities.RecipeImage) error
 }
 
 var _ repositories.RecipeRepository = (*mockRecipeRepo)(nil)

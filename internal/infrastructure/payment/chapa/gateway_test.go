@@ -171,7 +171,7 @@ func TestChapaGateway_Verify(t *testing.T) {
 	t.Run("nil response", func(t *testing.T) {
 		mockAPI := &mockChapaAPI{
 			verifyResponse: nil,
-			verifyErr:       nil,
+			verifyErr:      nil,
 		}
 		gw := &ChapaGateway{client: mockAPI}
 
