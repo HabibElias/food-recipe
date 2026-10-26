@@ -1,15 +1,21 @@
 package dto
 
+import "go/food-recipe/internal/presentation/validator"
+
 type RecipeImageItemDTO struct {
-	ImageName      string `json:"image_name"`
-	ImageType      string `json:"image_type"`
-	ImageBase64Str string `json:"image_base64str"`
+	ImageName      string `json:"image_name" validate:"required"`
+	ImageType      string `json:"image_type" validate:"required"`
+	ImageBase64Str string `json:"image_base64str" validate:"required"`
 	IsThumbnail    bool   `json:"is_thumbnail"`
 }
 
 type UploadRecipeImagesInputDTO struct {
-	RecipeID     int                  `json:"recipe_id"`
-	RecipeImages []RecipeImageItemDTO `json:"recipe_images"`
+	RecipeID     int                  `json:"recipe_id" validate:"required,gt=0"`
+	RecipeImages []RecipeImageItemDTO `json:"recipe_images" validate:"required,min=1,dive"`
+}
+
+func (d UploadRecipeImagesInputDTO) Validate() error {
+	return validator.ValidateStruct(d)
 }
 
 type UploadRecipeImagesOutputDTO struct {
@@ -24,14 +30,18 @@ type UploadRecipeImagesActionPayloadDTO struct {
 }
 
 type UserImageItemDTO struct {
-	ImageName      string `json:"image_name"`
-	ImageType      string `json:"image_type"`
-	ImageBase64Str string `json:"image_base64str"`
+	ImageName      string `json:"image_name" validate:"required"`
+	ImageType      string `json:"image_type" validate:"required"`
+	ImageBase64Str string `json:"image_base64str" validate:"required"`
 }
 
 type UploadUserImageInputDTO struct {
-	UserID string           `json:"user_id"`
-	Image  UserImageItemDTO `json:"image"`
+	UserID string           `json:"user_id" validate:"required,uuid"`
+	Image  UserImageItemDTO `json:"image" validate:"required"`
+}
+
+func (d UploadUserImageInputDTO) Validate() error {
+	return validator.ValidateStruct(d)
 }
 
 type UploadUserImageOutputDTO struct {

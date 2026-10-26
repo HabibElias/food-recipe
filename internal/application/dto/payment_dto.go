@@ -1,17 +1,33 @@
 package dto
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"go/food-recipe/internal/presentation/validator"
+)
 
 type InitializePaymentInputDTO struct {
-	Amount   float64 `json:"amount"`
-	RecipeID int     `json:"recipe_id"`
-	Phone    string  `json:"phone,omitempty"`
+	Amount   float64 `json:"amount" validate:"required,gt=0"`
+	RecipeID int     `json:"recipe_id" validate:"required,gt=0"`
+	Phone    string  `json:"phone,omitempty" validate:"omitempty,min=9"`
+}
+
+func (d InitializePaymentInputDTO) Validate() error {
+	return validator.ValidateStruct(d)
 }
 
 type InitializePaymentOutputDTO struct {
 	CheckoutURL string `json:"checkout_url"`
 	TxRef       string `json:"tx_ref"`
 	Status      string `json:"status"`
+}
+
+type VerifyPaymentInputDTO struct {
+	TrxRef string `json:"trx_ref" validate:"required"`
+}
+
+func (d VerifyPaymentInputDTO) Validate() error {
+	return validator.ValidateStruct(d)
 }
 
 type VerifyPaymentOutputDTO struct {

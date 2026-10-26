@@ -1,12 +1,20 @@
 package dto
 
-import "github.com/google/uuid"
+import (
+	"go/food-recipe/internal/presentation/validator"
+
+	"github.com/google/uuid"
+)
 
 type LikeEventDataNewDTO struct {
-	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"user_id"`
-	RecipeID  int       `json:"recipe_id"`
+	ID        uuid.UUID `json:"id" validate:"required"`
+	UserID    uuid.UUID `json:"user_id" validate:"required"`
+	RecipeID  int       `json:"recipe_id" validate:"required,gt=0"`
 	CreatedAt string    `json:"created_at"`
+}
+
+func (d LikeEventDataNewDTO) Validate() error {
+	return validator.ValidateStruct(d)
 }
 
 type LikeEventDataDTO struct {
@@ -19,7 +27,11 @@ type LikeEventDTO struct {
 }
 
 type LikeEventPayloadDTO struct {
-	Event LikeEventDTO `json:"event"`
+	Event LikeEventDTO `json:"event" validate:"required"`
+}
+
+func (d LikeEventPayloadDTO) Validate() error {
+	return validator.ValidateStruct(d)
 }
 
 type LikeNotificationOutputDTO struct {
