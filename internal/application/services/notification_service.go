@@ -51,6 +51,11 @@ func (s *NotificationService) HandleLikeNotification(
 		return nil, err
 	}
 
+	// Do not notify a user when liking their own recipe
+	if ownerUUID == initiatorID {
+		return &dto.LikeNotificationOutputDTO{OK: true, Skipped: true}, nil
+	}
+
 	notification := &entities.Notification{
 		UserID:      ownerUUID,
 		Message:     "user @" + likerUsername + " liked your recipe",

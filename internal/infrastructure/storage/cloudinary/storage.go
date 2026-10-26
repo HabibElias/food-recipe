@@ -30,7 +30,7 @@ func NewCloudinaryStorage(cfg config.CloudinaryConfig) (*CloudinaryStorage, erro
 var _ ports.FileStorage = (*CloudinaryStorage)(nil)
 
 func (s *CloudinaryStorage) UploadBase64Image(ctx context.Context, base64Data, publicID, folder string) (string, error) {
-	if s.client == nil {
+	if s == nil || s.client == nil {
 		return "", fmt.Errorf("cloudinary client not initialized")
 	}
 	if base64Data == "" {
