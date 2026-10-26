@@ -23,7 +23,7 @@ func NewNotificationHandler(notificationService *services.NotificationService) *
 func (h *NotificationHandler) LikeNotification(c *fiber.Ctx) error {
 	var payload dto.LikeEventPayloadDTO
 	if err := c.BodyParser(&payload); err != nil {
-		return response.BadRequest(c, "invalid payload: "+err.Error())
+		return response.BadRequest(c, "invalid payload")
 	}
 
 	if !strings.EqualFold(payload.Event.Op, "INSERT") {

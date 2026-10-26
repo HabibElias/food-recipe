@@ -7,15 +7,17 @@ import (
 
 // CORSMiddleware configures CORS for incoming requests.
 func CORSMiddleware(allowedOrigins string) fiber.Handler {
-	if allowedOrigins == "" {
+	allowCredentials := true
+	if allowedOrigins == "" || allowedOrigins == "*" {
 		allowedOrigins = "*"
+		allowCredentials = false
 	}
 	return cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,
+		AllowCredentials: allowCredentials,
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Accept,Authorization,Content-Type,X-CSRF-Token",
 		ExposeHeaders:    "Link,Authorization",
-		AllowCredentials: true,
 		MaxAge:           300,
 	})
 }

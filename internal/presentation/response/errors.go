@@ -2,6 +2,7 @@ package response
 
 import (
 	"errors"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	domainerrors "go/food-recipe/internal/domain/errors"
@@ -29,5 +30,6 @@ func HandleDomainError(c *fiber.Ctx, err error) error {
 		return JSON(c, fiber.StatusServiceUnavailable, ErrorResponse{Message: err.Error()})
 	}
 
-	return Internal(c, err.Error())
+	log.Printf("[ERROR] unhandled error: %v", err)
+	return Internal(c, "internal server error")
 }

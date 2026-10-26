@@ -47,22 +47,46 @@ func TestRecoverMiddleware(t *testing.T) {
 }
 
 func TestCORSMiddleware(t *testing.T) {
-	app := fiber.New()
-	app.Use(middleware.CORSMiddleware("https://example.com"))
-	app.Get("/cors", func(c *fiber.Ctx) error {
-		return c.SendString("ok")
+	t.Run("SpecificOrigin_AllowsCredentials", func(t *testing.T) {
+		app := fiber.New()
+		app.Use(middleware.CORSMiddleware("https://example.com"))
+		app.Get("/cors", func(c *fiber.Ctx) error {
+			return c.SendString("ok")
+		})
+
+		req := httptest.NewRequest("OPTIONS", "/cors", nil)
+		req.Header.Set("Origin", "https://example.com")
+		req.Header.Set("Access-Control-Request-Method", "GET")
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("request failed: %v", err)
+		}
+		if origin := resp.Header.Get("Access-Control-Allow-Origin"); origin != "https://example.com" {
+			t.Errorf("expected Access-Control-Allow-Origin to be https://example.com, got %q", origin)
+		}
+		if creds := resp.Header.Get("Access-Control-Allow-Credentials"); creds != "true" {
+			t.Errorf("expected Access-Control-Allow-Credentials true, got %q", creds)
+		}
 	})
 
-	req := httptest.NewRequest("OPTIONS", "/cors", nil)
-	req.Header.Set("Origin", "https://example.com")
-	req.Header.Set("Access-Control-Request-Method", "GET")
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("request failed: %v", err)
-	}
-	if origin := resp.Header.Get("Access-Control-Allow-Origin"); origin != "https://example.com" {
-		t.Errorf("expected Access-Control-Allow-Origin to be https://example.com, got %q", origin)
-	}
+	t.Run("WildcardOrigin_DisablesCredentials", func(t *testing.T) {
+		app := fiber.New()
+		app.Use(middleware.CORSMiddleware("*"))
+		app.Get("/cors", func(c *fiber.Ctx) error {
+			return c.SendString("ok")
+		})
+
+		req := httptest.NewRequest("OPTIONS", "/cors", nil)
+		req.Header.Set("Origin", "https://example.com")
+		req.Header.Set("Access-Control-Request-Method", "GET")
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("request failed: %v", err)
+		}
+		if creds := resp.Header.Get("Access-Control-Allow-Credentials"); creds != "" && creds != "false" {
+			t.Errorf("expected Access-Control-Allow-Credentials to be false or omitted for wildcard, got %q", creds)
+		}
+	})
 }
 
 func TestAuthMiddleware(t *testing.T) {
@@ -131,6 +155,23 @@ func TestAuthMiddleware(t *testing.T) {
 		body, _ := io.ReadAll(resp.Body)
 		if !bytes.Contains(body, []byte(userID)) {
 			t.Errorf("expected body to contain user ID %s, got %s", userID, string(body))
+		}
+	})
+
+	t.Run("ValidToken_ArbitraryWhitespace", func(t *testing.T) {
+		token, err := security.GenerateHasuraJWT(userID, email, secret)
+		if err != nil {
+			t.Fatalf("failed to generate JWT: %v", err)
+		}
+
+		req := httptest.NewRequest("GET", "/protected", nil)
+		req.Header.Set("Authorization", "Bearer    "+token)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("request failed: %v", err)
+		}
+		if resp.StatusCode != fiber.StatusOK {
+			t.Errorf("expected 200, got %d", resp.StatusCode)
 		}
 	})
 }

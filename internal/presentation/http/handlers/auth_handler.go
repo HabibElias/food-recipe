@@ -58,7 +58,7 @@ func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	if token == "" {
 		authHeader := c.Get("Authorization")
 		if authHeader != "" {
-			parts := strings.Split(authHeader, " ")
+			parts := strings.Fields(authHeader)
 			if len(parts) == 2 && strings.EqualFold(parts[0], "bearer") {
 				token = strings.TrimSpace(parts[1])
 			} else if len(parts) == 1 {

@@ -146,7 +146,7 @@ func TestHandleDomainError(t *testing.T) {
 			name:         "Default unknown error",
 			err:          errors.New("something totally unknown"),
 			expectedCode: fiber.StatusInternalServerError,
-			expectedMsg:  "something totally unknown",
+			expectedMsg:  "internal server error",
 		},
 		{
 			name:         "Nil error",

@@ -16,7 +16,7 @@ func AuthMiddleware(secret string) fiber.Handler {
 			return response.Unauthorized(c, "missing authorization header")
 		}
 
-		parts := strings.Split(authHeader, " ")
+		parts := strings.Fields(authHeader)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
 			return response.Unauthorized(c, "invalid authorization header format")
 		}

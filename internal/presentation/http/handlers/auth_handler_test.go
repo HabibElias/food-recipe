@@ -378,6 +378,27 @@ func TestAuthHandler_Me(t *testing.T) {
 		}
 	})
 
+	t.Run("Success_WithAuthHeaderFallback_ArbitraryWhitespace", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/me", nil)
+		req.Header.Set("Authorization", "Bearer    "+validToken)
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("request failed: %v", err)
+		}
+		if resp.StatusCode != fiber.StatusOK {
+			t.Errorf("expected 200, got %d", resp.StatusCode)
+		}
+
+		var out dto.MeOutputDTO
+		body, _ := io.ReadAll(resp.Body)
+		if err := json.Unmarshal(body, &out); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+		if out.UserID != userID.String() {
+			t.Errorf("expected userID %s, got %s", userID.String(), out.UserID)
+		}
+	})
+
 	t.Run("MissingToken_ReturnsBadRequest", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/me", bytes.NewBufferString("{}"))
 		req.Header.Set("Content-Type", "application/json")
