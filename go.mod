@@ -5,13 +5,13 @@ go 1.24.6
 require (
 	github.com/Chapa-Et/chapa-go v0.0.0-20241220020920-73963fcb43a8
 	github.com/cloudinary/cloudinary-go/v2 v2.7.0
-	github.com/go-chi/chi v1.5.5
-	github.com/go-chi/cors v1.2.2
+	github.com/gofiber/fiber/v2 v2.52.16
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/hasura/go-graphql-client v0.14.5
 	github.com/joho/godotenv v1.5.1
 	github.com/shopspring/decimal v1.4.0
+	github.com/spf13/viper v1.18.2
 	golang.org/x/crypto v0.43.0
 )
 
@@ -21,7 +21,6 @@ require (
 	github.com/creasty/defaults v1.5.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0 // indirect
-	github.com/gofiber/fiber/v2 v2.52.16 // indirect
 	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
@@ -38,7 +37,6 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.18.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
