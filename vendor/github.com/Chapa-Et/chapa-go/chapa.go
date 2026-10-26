@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/spf13/viper"
 )
@@ -37,7 +36,7 @@ type chapa struct {
 
 func New() API {
 	return &chapa{
-		apiKey: os.Getenv("API_KEY"),
+		apiKey: viper.GetString("API_KEY"),
 		client: &http.Client{
 			Timeout: viper.GetDuration("TIME_OUT"),
 		},

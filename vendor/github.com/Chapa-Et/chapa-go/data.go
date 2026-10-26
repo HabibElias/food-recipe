@@ -15,7 +15,6 @@ type (
 		Phone          string                 `json:"phone"`
 		CallbackURL    string                 `json:"callback_url"`
 		TransactionRef string                 `json:"tx_ref"`
-		TestMode       bool                   `json:"test_mode"`
 		Customization  map[string]interface{} `json:"customization"`
 	}
 
