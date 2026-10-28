@@ -68,6 +68,7 @@ func main() {
 		MediaHandler:        mediaHandler,
 		NotificationHandler: notificationHandler,
 		HealthHandler:       healthHandler,
+		ActionSecret:        cfg.Hasura.ActionSecret,
 	})
 
 	// Graceful Shutdown

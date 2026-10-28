@@ -1,6 +1,10 @@
 package dto
 
-import "go/food-recipe/internal/pkg/validator"
+import (
+	"time"
+
+	"go/food-recipe/internal/pkg/validator"
+)
 
 // Validatable represents an input DTO that can validate itself.
 type Validatable interface {
@@ -17,8 +21,23 @@ func (d LoginInputDTO) Validate() error {
 }
 
 type LoginOutputDTO struct {
-	UserID string `json:"user_id"`
-	Token  string `json:"token"`
+	UserID       string         `json:"user_id"`
+	Token        string         `json:"token"`
+	LoggedInUser AuthProfileDTO `json:"loggedInUser"`
+}
+
+// AuthProfileDTO contains only fields safe to return to the authenticated user.
+// Keep it separate from the persistence entity, which also holds a password hash.
+type AuthProfileDTO struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Username  string    `json:"username"`
+	FirstName string    `json:"FirstName"`
+	LastName  string    `json:"LastName"`
+	AvatarURL string    `json:"avatar_url"`
+	Bio       string    `json:"bio"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type SignupInputDTO struct {
@@ -34,8 +53,9 @@ func (d SignupInputDTO) Validate() error {
 }
 
 type SignupOutputDTO struct {
-	UserID string `json:"user_id"`
-	Token  string `json:"token"`
+	UserID      string         `json:"user_id"`
+	Token       string         `json:"token"`
+	CreatedUser AuthProfileDTO `json:"createdUser"`
 }
 
 type MeInputDTO struct {
@@ -47,8 +67,9 @@ func (d MeInputDTO) Validate() error {
 }
 
 type MeOutputDTO struct {
-	UserID string `json:"user_id"`
-	Token  string `json:"token"`
+	UserID string         `json:"user_id"`
+	Token  string         `json:"token"`
+	User   AuthProfileDTO `json:"user"`
 }
 
 type LoginActionPayloadDTO struct {

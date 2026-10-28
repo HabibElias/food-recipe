@@ -12,6 +12,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Setenv("CALLBACK_URL", "http://localhost:8000/callback")
 	t.Setenv("HASURA_URL", "http://localhost:8080/v1/graphql")
 	t.Setenv("HASURA_GRAPHQL_ADMIN_SECRET", "secret")
+	t.Setenv("HASURA_ACTION_SECRET", "webhook-secret")
 	t.Setenv("HASURA_JWT_SECRET", "jwtsecret123456789012345678901234")
 	t.Setenv("CLOUDINARY_CLOUD_NAME", "cloud")
 	t.Setenv("CLOUDINARY_API_KEY", "key")
@@ -37,6 +38,9 @@ func TestLoadConfig(t *testing.T) {
 	}
 	if cfg.Hasura.AdminSecret != "secret" {
 		t.Errorf("expected admin secret, got %s", cfg.Hasura.AdminSecret)
+	}
+	if cfg.Hasura.ActionSecret != "webhook-secret" {
+		t.Error("expected configured Hasura webhook secret")
 	}
 	if cfg.JWT.Secret != "jwtsecret123456789012345678901234" {
 		t.Errorf("expected jwt secret, got %s", cfg.JWT.Secret)

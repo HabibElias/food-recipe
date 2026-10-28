@@ -2,8 +2,11 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"go/food-recipe/internal/application/dto"
@@ -360,4 +363,60 @@ func TestAuthService_Me(t *testing.T) {
 			t.Errorf("expected ErrUserNotFound, got %v", err)
 		}
 	})
+}
+
+// Auth action profiles must satisfy the frontend without returning persistence
+// entities, password hashes, or another user's private email.
+func TestAuthActionsReturnSafeAuthenticatedProfile(t *testing.T) {
+	cfg := testConfig()
+	hash, err := security.HashPassword("profile-password")
+	if err != nil {
+		t.Fatal(err)
+	}
+	user := &entities.User{ID: uuid.New(), Email: "profile@example.invalid", Username: "profileuser", FirstName: "Profile", LastName: "User", PasswordHash: hash, Bio: "A cook", CreatedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), UpdatedAt: time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)}
+	repo := &mockUserRepo{getByEmailFn: func(context.Context, string) (*entities.User, error) { return user, nil }}
+	svc := NewAuthService(repo, cfg)
+	token, err := security.GenerateHasuraJWT(user.ID.String(), user.Email, cfg.JWT.Secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name, profileKey string
+		run              func() (any, error)
+	}{
+		{"login", "loggedInUser", func() (any, error) {
+			return svc.Login(context.Background(), dto.LoginInputDTO{Email: user.Email, Password: "profile-password"})
+		}},
+		{"me", "user", func() (any, error) { return svc.Me(context.Background(), token) }},
+		{"signup", "createdUser", func() (any, error) {
+			signup := NewAuthService(&mockUserRepo{createFn: func(context.Context, *entities.User) (*entities.User, error) { return user, nil }}, cfg)
+			return signup.Signup(context.Background(), dto.SignupInputDTO{Email: user.Email, Password: "profile-password", Username: user.Username, FirstName: user.FirstName, LastName: user.LastName})
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := tc.run()
+			if err != nil {
+				t.Fatal(err)
+			}
+			encoded, err := json.Marshal(result)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(string(encoded), hash) || strings.Contains(strings.ToLower(string(encoded)), "password") {
+				t.Fatal("auth response leaked password information")
+			}
+			var body map[string]any
+			if err := json.Unmarshal(encoded, &body); err != nil {
+				t.Fatal(err)
+			}
+			profile, ok := body[tc.profileKey].(map[string]any)
+			if !ok {
+				t.Fatal("missing frontend profile object")
+			}
+			if body["user_id"] != user.ID.String() || body["token"] == "" || profile["id"] != user.ID.String() || profile["email"] != user.Email || profile["bio"] != user.Bio || profile["created_at"] != "2026-01-01T00:00:00Z" {
+				t.Fatal("auth response did not contain the authenticated user's profile")
+			}
+		})
+	}
 }

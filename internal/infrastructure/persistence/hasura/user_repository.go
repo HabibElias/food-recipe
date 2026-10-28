@@ -3,6 +3,7 @@ package hasura
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"go/food-recipe/internal/domain/entities"
@@ -28,6 +29,9 @@ type gqlUser struct {
 	FirstName string    `graphql:"FirstName"`
 	LastName  string    `graphql:"LastName"`
 	AvatarURL string    `graphql:"avatar_url"`
+	Bio       string    `graphql:"bio"`
+	CreatedAt time.Time `graphql:"created_at"`
+	UpdatedAt time.Time `graphql:"updated_at"`
 }
 
 func mapGQLUserToEntity(u *gqlUser) *entities.User {
@@ -42,6 +46,9 @@ func mapGQLUserToEntity(u *gqlUser) *entities.User {
 		LastName:     u.LastName,
 		PasswordHash: u.Password,
 		AvatarURL:    u.AvatarURL,
+		Bio:          u.Bio,
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
 	}
 }
 

@@ -53,8 +53,9 @@ func (s *AuthService) Login(ctx context.Context, input dto.LoginInputDTO) (*dto.
 	}
 
 	return &dto.LoginOutputDTO{
-		UserID: user.ID.String(),
-		Token:  token,
+		UserID:       user.ID.String(),
+		Token:        token,
+		LoggedInUser: authProfile(user),
 	}, nil
 }
 
@@ -140,8 +141,9 @@ func (s *AuthService) Signup(ctx context.Context, input dto.SignupInputDTO) (*dt
 	}
 
 	return &dto.SignupOutputDTO{
-		UserID: createdUser.ID.String(),
-		Token:  token,
+		UserID:      createdUser.ID.String(),
+		Token:       token,
+		CreatedUser: authProfile(createdUser),
 	}, nil
 }
 
@@ -177,5 +179,14 @@ func (s *AuthService) Me(ctx context.Context, token string) (*dto.MeOutputDTO, e
 	return &dto.MeOutputDTO{
 		UserID: user.ID.String(),
 		Token:  newToken,
+		User:   authProfile(user),
 	}, nil
+}
+
+func authProfile(user *entities.User) dto.AuthProfileDTO {
+	return dto.AuthProfileDTO{
+		ID: user.ID.String(), Email: user.Email, Username: user.Username,
+		FirstName: user.FirstName, LastName: user.LastName, AvatarURL: user.AvatarURL,
+		Bio: user.Bio, CreatedAt: user.CreatedAt, UpdatedAt: user.UpdatedAt,
+	}
 }

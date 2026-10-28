@@ -13,8 +13,9 @@ type AppConfig struct {
 }
 
 type HasuraConfig struct {
-	URL         string
-	AdminSecret string
+	URL          string
+	AdminSecret  string
+	ActionSecret string
 }
 
 type JWTConfig struct {
@@ -61,8 +62,9 @@ func LoadConfig() (*Config, error) {
 			CallbackURL:    os.Getenv("CALLBACK_URL"),
 		},
 		Hasura: HasuraConfig{
-			URL:         os.Getenv("HASURA_URL"),
-			AdminSecret: os.Getenv("HASURA_GRAPHQL_ADMIN_SECRET"),
+			URL:          os.Getenv("HASURA_URL"),
+			AdminSecret:  os.Getenv("HASURA_GRAPHQL_ADMIN_SECRET"),
+			ActionSecret: os.Getenv("HASURA_ACTION_SECRET"),
 		},
 		JWT: JWTConfig{
 			Secret: os.Getenv("HASURA_JWT_SECRET"),

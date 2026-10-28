@@ -20,6 +20,10 @@ services:
         sync: false
       - key: HASURA_GRAPHQL_JWT_SECRET
         sync: false
+      - key: HASURA_ACTION_SECRET
+        sync: false
+      - key: API_BASE_URL
+        sync: false
       - key: HASURA_GRAPHQL_CORS_DOMAIN
         sync: false
       - key: HASURA_GRAPHQL_UNAUTHORIZED_ROLE
@@ -42,6 +46,8 @@ services:
       - key: HASURA_GRAPHQL_ADMIN_SECRET
         sync: false
       - key: HASURA_JWT_SECRET
+        sync: false
+      - key: HASURA_ACTION_SECRET
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false

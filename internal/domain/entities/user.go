@@ -1,6 +1,10 @@
 package entities
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type User struct {
 	ID           uuid.UUID
@@ -10,6 +14,9 @@ type User struct {
 	LastName     string
 	PasswordHash string
 	AvatarURL    string
+	Bio          string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func (u User) FullName() string {

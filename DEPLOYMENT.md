@@ -8,6 +8,14 @@ frontend belongs in the separate `food-recipe-app` Vercel project.
 
 ## Provide the hosted database URL
 
+For deployment managed from the cloud task, add `VERCEL_TOKEN` and
+`RENDER_API_KEY` in the task environment's secret settings, scoped to
+`api.vercel.com` and `api.render.com` respectively. Add
+`HASURA_GRAPHQL_DATABASE_URL` as a runtime environment variable so the deployment
+process can forward the actual URL to Render. A proxy-backed HTTPS token
+placeholder cannot be used as a PostgreSQL connection string. Never send these
+values through chat. No Neon API key is needed when the database already exists.
+
 Enter the PostgreSQL connection string directly in Render's secret environment
 field `HASURA_GRAPHQL_DATABASE_URL` for **food-recipe-hasura**. Do not paste it
 into chat, commit it, put it in a Docker build argument, or set it in Vercel's
@@ -37,6 +45,7 @@ for this frontend.
    | `HASURA_URL` | The deployed Hasura HTTPS URL ending in `/v1/graphql` |
    | `HASURA_GRAPHQL_ADMIN_SECRET` | The same private admin secret configured on Hasura |
    | `HASURA_JWT_SECRET` | The same signing key configured in Hasura's JWT JSON; use a strong key of at least 32 bytes |
+   | `HASURA_ACTION_SECRET` | A separate random webhook secret matching Hasura; required for action/event authentication |
    | `ALLOWED_ORIGINS` | The exact frontend origin, e.g. `https://your-project.vercel.app`; comma-separate additional trusted origins |
    | `CALLBACK_URL` | `https://<your-api>.onrender.com/v1/payment/verify` |
 
@@ -62,9 +71,9 @@ can supply the database URL.
 
 For a PostgreSQL deployment:
 
-1. For a **new, empty** PostgreSQL database, apply `init.sql` with a trusted SQL client:
-   `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f init.sql`. Treat the URL as a
-   secret and use the provider's recommended TLS settings.
+1. Configure the hosted PostgreSQL URL on Hasura, then use the initializer below
+   for the **new, empty** database. It creates the base schema, the additional
+   frontend tables, and matching Hasura metadata through Hasura's admin API.
 2. Configure the Blueprint's **food-recipe-hasura** service, which uses the
    existing image `hasura/graphql-engine:v2.44.0` through a minimal Dockerfile:
 
@@ -74,6 +83,8 @@ For a PostgreSQL deployment:
    | `HASURA_GRAPHQL_SERVER_PORT` | `8080`; set Render's `PORT` to `8080` too |
    | `HASURA_GRAPHQL_ADMIN_SECRET` | A private random admin secret matching the Go API |
    | `HASURA_GRAPHQL_JWT_SECRET` | JSON: `{"type":"HS256","key":"<the same signing key as the Go API>"}` |
+   | `HASURA_ACTION_SECRET` | The same private webhook secret configured on the Go API |
+   | `API_BASE_URL` | The public HTTPS origin of the Go API, without a trailing slash |
    | `HASURA_GRAPHQL_UNAUTHORIZED_ROLE` | `anon` |
    | `HASURA_GRAPHQL_CORS_DOMAIN` | Your exact Vercel frontend origin |
    | `HASURA_GRAPHQL_ENABLE_CONSOLE` | `false` for production |
@@ -83,20 +94,50 @@ For a PostgreSQL deployment:
    `https://<hasura-service>.onrender.com/v1/graphql`, and subscriptions use
    `wss://<hasura-service>.onrender.com/v1/graphql`. Vercel hosts the Nuxt
    frontend; Hasura hosts the long-lived GraphQL WebSocket connections.
-3. Apply the application's matching Hasura metadata: tracked tables,
-   relationships, least-privilege `anon` and `user` permissions, actions, and event
-   triggers. Action/event webhook URLs must point to the deployed Go API, not
-   `localhost` or `host.docker.internal`.
+3. Run the versioned initializer from this repository root, with `HASURA_URL` and
+   `HASURA_GRAPHQL_ADMIN_SECRET` securely available in the process environment:
 
-**Current repository blocker:** the backend's `init.sql` is not the full schema
-expected by the frontend. For example, the frontend queries `recipe.is_paid`,
-`prep_time`, categories, steps, ingredients, and ratings that this SQL does not
-create. The repositories also do not contain a complete Hasura metadata export.
-Import matching existing migrations/metadata or implement them before deploying
-a fully working recipe application. Do not expose the admin secret to the browser
-to work around missing permissions.
+   ```sh
+   python3 deploy/hasura/bootstrap.py --initialize-empty-database
+   ```
+
+   The endpoint must be HTTPS and end in `/v1/graphql`. The initializer applies
+   `init.sql` and `deploy/database/schema.sql`, then installs metadata generated
+   by `deploy/hasura/metadata.py`. It rejects an unexpected existing database or
+   unrelated metadata instead of overwriting it, and recognizes its own completed
+   initialization on repeat runs. Hasura resolves webhook URLs from `API_BASE_URL`
+   and sends `X-Hasura-Action-Secret` from its `HASURA_ACTION_SECRET` variable.
+
+   The schema retains numeric recipe prices; the frontend mutations use Hasura's
+   `numeric` scalar. Metadata includes the recipe relationships, signup/login/Me
+   actions, role permissions, and the recipe-like notification trigger. Account
+   email/password columns are not available through public profile queries.
+   Users can change only their own recipes and notifications; paid instructions
+   require ownership or a successful purchase.
+
+Image-upload and payment actions are currently **admin-only**. Supplying
+Cloudinary or Chapa credentials alone does not grant public action access.
+Complete their ownership/price validation and integration tests before enabling
+user permissions; normal signup, recipe data, and notifications do not require
+those external integrations.
+
+For an existing local database created from the old `init.sql`, review and apply
+the additive `deploy/database/schema.sql` migration with a trusted SQL client
+before using the updated API, which reads the new profile fields. Do not point
+the empty-database initializer at an unrelated existing production database.
 
 ## Docker validation
+
+The isolated schema/auth/permission/subscription smoke suite creates and removes
+its own local Docker resources. With Go 1.26 and Node 22+ available, run it from
+this repository root:
+
+```sh
+python3 deploy/hasura/smoke_test.py
+```
+
+If `go` on your PATH is not the required toolchain, set `GO_BINARY` to the Go
+executable path. This suite does not use your hosted database or cloud API tokens.
 
 The image uses Go 1.26.10, checked-in `vendor/` dependencies, a static binary, and
 a non-root runtime with CA certificates. To validate it locally:
