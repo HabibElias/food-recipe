@@ -126,6 +126,25 @@ the additive `deploy/database/schema.sql` migration with a trusted SQL client
 before using the updated API, which reads the new profile fields. Do not point
 the empty-database initializer at an unrelated existing production database.
 
+## Optional sample recipes
+
+After bootstrap, use the same `HASURA_URL` and `HASURA_GRAPHQL_ADMIN_SECRET`
+environment variables and run:
+
+```sh
+python3 deploy/hasura/seed.py
+```
+
+This adds ten free recipes, ingredients, ordered cooking steps and thumbnails
+across Breakfast, Lunch, Dinner, Dessert and Snacks. The demo author is clearly
+identified as Demo Kitchen and has an undisclosed random password; register your
+own account to publish recipes. Most thumbnails use the frontend's bundled
+category illustrations, so no image-service credentials are needed.
+
+The transaction records seeded recipe IDs in an untracked internal table.
+Repeating it adds no duplicates and preserves existing accounts, recipes,
+passwords and edits. It creates no artificial purchases, reviews or ratings.
+
 ## Docker validation
 
 The isolated schema/auth/permission/subscription smoke suite creates and removes
