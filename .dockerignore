@@ -7,6 +7,6 @@ tmp/
 bin/
 *.exe
 food-recipe
-vendor/
 .env
+.env.*
 *.md

@@ -1,0 +1,49 @@
+# Deploy the API with Render's "New Blueprint" flow from this repository.
+# Enter the existing hosted PostgreSQL URL in Hasura's secret environment field.
+# This Blueprint does not create or modify a database.
+services:
+  - type: web
+    name: food-recipe-hasura
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deploy/hasura/Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: HASURA_GRAPHQL_SERVER_PORT
+        value: "8080"
+      - key: HASURA_GRAPHQL_DATABASE_URL
+        sync: false
+      - key: HASURA_GRAPHQL_ADMIN_SECRET
+        sync: false
+      - key: HASURA_GRAPHQL_JWT_SECRET
+        sync: false
+      - key: HASURA_GRAPHQL_CORS_DOMAIN
+        sync: false
+      - key: HASURA_GRAPHQL_UNAUTHORIZED_ROLE
+        value: anon
+      - key: HASURA_GRAPHQL_ENABLE_CONSOLE
+        value: "false"
+      - key: HASURA_GRAPHQL_DEV_MODE
+        value: "false"
+
+  - type: web
+    name: food-recipe-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /v1/healthz
+    envVars:
+      - key: HASURA_URL
+        sync: false
+      - key: HASURA_GRAPHQL_ADMIN_SECRET
+        sync: false
+      - key: HASURA_JWT_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: CALLBACK_URL
+        sync: false

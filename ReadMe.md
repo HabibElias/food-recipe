@@ -2,6 +2,9 @@
 
 Clean Architecture Go backend service for the Food Recipe platform, integrating **Fiber v2**, **Hasura GraphQL Engine**, **PostgreSQL**, **Cloudinary**, and **Chapa Payment Gateway**.
 
+For Docker deployment on Render and production Hasura configuration, see
+[DEPLOYMENT.md](DEPLOYMENT.md).
+
 ---
 
 ## Architecture Overview

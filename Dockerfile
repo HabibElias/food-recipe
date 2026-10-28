@@ -1,35 +1,26 @@
 # Stage 1: Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.26.10-alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
-
-# Leverage docker layer caching for dependencies
+# Use the checked-in dependencies and the toolchain required by go.mod.
+# Building needs no package-registry access or automatic toolchain downloads.
+ENV GOTOOLCHAIN=local
 COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy source code
-COPY . .
+COPY vendor/ ./vendor/
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
 
 # Build statically linked binary without debug symbols for small image size
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /food-recipe ./cmd/app
+RUN CGO_ENABLED=0 go build -mod=vendor -trimpath -ldflags="-w -s" -o /food-recipe ./cmd/app
 
 # Stage 2: Minimal runtime image
-FROM alpine:3.20
+FROM gcr.io/distroless/static-debian12:nonroot
 
 WORKDIR /app
 
-# Install runtime dependencies (certificates for HTTPS/Cloudinary/Chapa)
-RUN apk --no-cache add ca-certificates tzdata
-
-# Copy binary from builder stage
+# The runtime includes CA certificates and timezone data, and runs as non-root.
 COPY --from=builder /food-recipe /app/food-recipe
-
-# Non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
 
 EXPOSE 8000
 
