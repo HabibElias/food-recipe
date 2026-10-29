@@ -112,7 +112,9 @@ For a PostgreSQL deployment:
    `numeric` scalar. Metadata includes the recipe relationships, signup/login/Me
    actions, role permissions, and the recipe-like notification trigger. Account
    email/password columns are not available through public profile queries.
-   Users can change only their own recipes and notifications; paid instructions
+   Users can change only their own recipe data, notifications, and profile names
+   and bio. Profile updates cannot change account email, password or username.
+   Paid instructions
    require ownership or a successful purchase.
 
 Image-upload and payment actions are currently **admin-only**. Supplying
@@ -137,12 +139,21 @@ python3 deploy/hasura/seed.py
 
 This adds ten free recipes, ingredients, ordered cooking steps and thumbnails
 across Breakfast, Lunch, Dinner, Dessert and Snacks. The demo author is clearly
-identified as Demo Kitchen and has an undisclosed random password; register your
-own account to publish recipes. Most thumbnails use the frontend's bundled
-category illustrations, so no image-service credentials are needed.
+identified as Bowlup Kitchen and has an undisclosed random password; register your
+own account to publish recipes. Photographs of the actual dishes are bundled in
+the frontend under `/images/recipes/`. Their original creators, source pages,
+licenses and web modifications are listed on the frontend's `/photo-credits`
+page and in `public/images/recipes/credits.json`.
+
+Deploy the matching Bowlup frontend assets before running this updated seed on
+an existing deployment. `seed.py` also runs `refresh_seed_photography.sql`, which
+replaces the original sample illustrations and upgrades three sample dishes to
+Skillet Shakshuka, Tomato Lentil Soup, and Lemon Hummus with Warm Pita. It retains
+recipe IDs and replaces ingredients/steps only when a sample still has its
+original title. Edited titles and external uploaded images are preserved.
 
 The transaction records seeded recipe IDs in an untracked internal table.
-Repeating it adds no duplicates and preserves existing accounts, recipes,
+Repeating it adds no duplicates and preserves unrelated accounts, recipes,
 passwords and edits. It creates no artificial purchases, reviews or ratings.
 
 ## Docker validation

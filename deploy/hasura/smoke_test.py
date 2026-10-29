@@ -97,6 +97,13 @@ def run_checks(base, admin):
         gql("{user{" + column + "}}", token=ta, denied=True)
     print("public profile email/password exclusion: passed")
 
+    changed = gql('mutation($id:uuid!){update_user(where:{id:{_eq:$id}},_set:{bio:"A little from my kitchen"}){affected_rows}}', {"id": alice}, token=ta)
+    assert changed["update_user"]["affected_rows"] == 1
+    denied = gql('mutation($id:uuid!){update_user(where:{id:{_eq:$id}},_set:{bio:"Not your kitchen"}){affected_rows}}', {"id": alice}, token=tb)
+    assert denied["update_user"]["affected_rows"] == 0
+    gql('mutation{update_user(where:{},_set:{email:"wrong@example.invalid"}){affected_rows}}', token=ta, denied=True)
+    print("own-profile persistence and cross-user/private-field update denial: passed")
+
     defaults = {"limit": 10, "offset": 0, "where": {}, "id": -1, "user_id": alice}
     count = 0
     for file in sorted((FRONTEND / "server/_queries").glob("*.gql")):

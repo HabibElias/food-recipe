@@ -70,8 +70,10 @@ def build_tables():
 
     # Login/signup/me return private account data from custom action output types.
     # Never make password hashes or email addresses selectable through a profile.
-    add("user", ["id", "username", "FirstName", "LastName", "avatar_url", "bio", "created_at", "updated_at"],
+    profile = add("user", ["id", "username", "FirstName", "LastName", "avatar_url", "bio", "created_at", "updated_at"],
         arrays=[("recipes", "recipe", "user_id")])
+    profile["update_permissions"] = [_update(
+        ["FirstName", "LastName", "bio"], {"id": {"_eq": SESSION_USER}})]
     add("category", ["id", "category_name", "category_description"])
 
     recipe = add("recipe", ["id", "user_id", "title", "description", "price", "created_at", "updated_at", "category_id", "is_paid", "prep_time"],
